@@ -63,6 +63,10 @@ fwpa=
 LTO Driver RejectNegative Joined Var(flag_wpa)
 Whole program analysis (WPA) mode with number of parallel jobs specified.
 
+fdump
+LTO Var(flag_lto_dump)
+Call the dump function
+
 fresolution=
 LTO Joined
 The resolution file.
