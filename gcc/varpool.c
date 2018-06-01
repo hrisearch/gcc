@@ -239,7 +239,6 @@ varpool_node::dump (FILE *f)
   fprintf (f, "\n");
 }
 
-
 /* Dump given varpool node to stderr.  */
 void varpool_node::debug (void)
 {

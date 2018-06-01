@@ -21,5 +21,7 @@ along with GCC; see the file COPYING3.  If not see
 #define GCC_LTO_DUMP_H_
 
 void dump();
+void dump_list();
+void dump_list2();
 
 #endif

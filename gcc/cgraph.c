@@ -2234,6 +2234,7 @@ cgraph_node::dump (FILE *f)
     fprintf (f, "  Is instrumented version.\n");
   else if (instrumented_version)
     fprintf (f, "  Has instrumented version.\n");
+
 }
 
 /* Dump call graph node NODE to stderr.  */

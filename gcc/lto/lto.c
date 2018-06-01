@@ -3361,10 +3361,17 @@ lto_main (void)
      command line.  */
   read_cgraph_and_symbols (num_in_fnames, in_fnames);
 
+  /*Dump everything*/
   if (flag_lto_dump)
-  {
     dump();
-  }
+
+  /*Dump variables and functions used in IL*/
+  if (flag_lto_dump_list)
+    dump_list();
+
+  /*Dump specific variables and functions used in IL*/
+  if (flag_lto_dump_list2)
+    dump_list2();
 
   timevar_stop (TV_PHASE_STREAM_IN);
 
