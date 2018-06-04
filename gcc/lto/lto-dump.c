@@ -34,72 +34,46 @@ along with GCC; see the file COPYING3.  If not see
 #include "stringpool.h"
 #include "attribs.h"
 #include "stdio.h"
+#include "lto.h"
 
-/*Dump everything*/
-void dump()
+/* Dump everything.  */
+void 
+dump ()
 {
 	fprintf(stderr, "\nHello World!\n");
 }
-
-/*Dump variables and functions used in IL*/
-void dump_list()
+	
+/* Dump variables and functions used in IL.  */
+void
+dump_list ()
 {
 
-	fprintf (stderr, "Call Graph:\n");
-	cgraph_node *cnode;
-	
-	static const char * const symtab_type_names[] = {"symbol", "function", "variable"};
-  	static const char * const visibility_types[] = {
-    "default", "protected", "hidden", "internal" };
-	FOR_EACH_FUNCTION (cnode)
+	fprintf (stderr, "Symbol Table\n");
+    symtab_node *node;
+    fprintf (stderr, "\t\tName \t\tType \t\tVisibility\n");
+	FOR_EACH_SYMBOL (node)
 	{
-		fprintf (stderr, "\n%s (%s)", cnode->dump_asm_name (), cnode->name ());
-		fprintf (stderr, "\n  Type: %s", symtab_type_names[cnode->type]);
-		fprintf (stderr, "\n visibility: %s\n",
-		visibility_types [DECL_VISIBILITY (cnode->decl)]);
-	}
-
-	fprintf (stderr, "\nVarpool:\n");
-	varpool_node *vnode;
-    FOR_EACH_VARIABLE (vnode)
-    {
-		fprintf (stderr, "\n%s (%s)", vnode->dump_asm_name (), vnode->name ());
-		fprintf (stderr, "\n  Type: %s", symtab_type_names[vnode->type]);
-		fprintf (stderr, "\n visibility:%s\n",
-		visibility_types [DECL_VISIBILITY (vnode->decl)]);
+		fprintf (stderr, "\n%20s",(flag_lto_dump_demangle) 
+			? node->name (): node->dump_asm_name ());
+		fprintf (stderr, "%20s", node->dump_type_name ());
+		fprintf (stderr, "%20s\n", node->dump_visibility ());
 	}
 }
 
-/*Dump specific variables and functions used in IL*/
-void dump_list2()
+/* Dump specific variables and functions used in IL.  */
+void
+dump_symbol ()
 {
-
-	fprintf (stderr, "Call Graph:\n");
-	cgraph_node *cnode;
-	
-	static const char * const symtab_type_names[] = {"symbol", "function", "variable"};
-  	static const char * const visibility_types[] = {
-    "default", "protected", "hidden", "internal" };
-	FOR_EACH_FUNCTION (cnode)
+	symtab_node *node;
+    fprintf (stderr, "\t\tName \t\tType \t\tVisibility\n");
+	FOR_EACH_SYMBOL (node)
 	{
-		if (!strcmp(flag_lto_dump_list2, cnode->name()))
+		if (!strcmp(flag_lto_dump_symbol, node->name()))
 		{
-			fprintf (stderr, "\n%s (%s)", cnode->dump_asm_name (), cnode->name ());
-			fprintf (stderr, "\n  Type: %s", symtab_type_names[cnode->type]);
-			fprintf (stderr, "\n visibility: %s\n",
-			visibility_types [DECL_VISIBILITY (cnode->decl)]);
+			fprintf (stderr, "\n%20s",(flag_lto_dump_demangle) 
+				? node->name (): node->dump_asm_name ());
+		fprintf (stderr, "%20s", node->dump_type_name ());
+		fprintf (stderr, "%20s\n", node->dump_visibility ());
 		}
 	}	
-	fprintf (stderr, "\nVarpool:\n");
-	varpool_node *vnode;
-    FOR_EACH_VARIABLE (vnode)
-    {
-    	if (!strcmp(flag_lto_dump_list2, vnode->name()))
-		{	
-			fprintf (stderr, "\n%s (%s)", vnode->dump_asm_name (), vnode->name ());
-			fprintf (stderr, "\n  Type: %s", symtab_type_names[vnode->type]);
-			fprintf (stderr, "\n visibility:%s\n",
-			visibility_types [DECL_VISIBILITY (vnode->decl)]);
-		}
-	}
 }	

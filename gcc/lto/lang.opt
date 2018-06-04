@@ -71,9 +71,11 @@ fdump-lto-list
 LTO Var(flag_lto_dump_list)
 Call the dump function for variables and function in IL.
 
-fdump-lto-list=
-LTO Driver RejectNegative Joined Var(flag_lto_dump_list2)
+fdump-lto-symbol=
+LTO Driver RejectNegative Joined Var(flag_lto_dump_symbol)
 
+demangle
+LTO Var(flag_lto_dump_demangle)
 
 fresolution=
 LTO Joined

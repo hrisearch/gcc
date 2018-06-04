@@ -20,8 +20,13 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_LTO_DUMP_H_
 #define GCC_LTO_DUMP_H_
 
-void dump();
-void dump_list();
-void dump_list2();
+/* Dump everything.  */
+void dump ();
+
+/*Dump variables and function names used in IL.  */
+void dump_list ();
+
+/*Dump specific variable or function used in IL.  */
+void dump_symbol ();
 
 #endif
