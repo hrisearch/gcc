@@ -29,4 +29,7 @@ void dump_list ();
 /*Dump specific variable or function used in IL.  */
 void dump_symbol ();
 
+/*Dump gimple body of specific function.  */
+void dump_body ();
+
 #endif

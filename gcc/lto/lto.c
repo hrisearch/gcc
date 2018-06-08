@@ -2170,7 +2170,7 @@ lto_file_read (lto_file *file, FILE *resolution_file, int *count)
   /* Finalize each lto file for each submodule in the merged object */
   for (file_data = file_list.first; file_data != NULL; file_data = file_data->next)
     lto_create_files_from_ids (file, file_data, count);
- 
+
   splay_tree_delete (file_ids);
   htab_delete (section_hash_table);
 
@@ -3372,6 +3372,10 @@ lto_main (void)
   /* Dump specific variables and functions used in IL.  */
   if (flag_lto_dump_symbol)
     dump_symbol ();
+
+  /* Dump gimple body of specific function.  */
+  if (flag_lto_dump_body)
+    dump_body ();
 
   timevar_stop (TV_PHASE_STREAM_IN);
 

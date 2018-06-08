@@ -1320,7 +1320,6 @@ lto_read_body_or_constructor (struct lto_file_decl_data *file_data, struct symta
       /* Restore decl state */
       file_data->current_decl_state = file_data->global_decl_state;
     }
-
   lto_data_in_delete (data_in);
 }
 

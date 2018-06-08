@@ -815,7 +815,7 @@ symtab_node::dump_visibility () const
     "default", "protected", "hidden", "internal"
   };
 
-  return visibility_types [DECL_VISIBILITY (decl)];
+  return visibility_types[DECL_VISIBILITY (decl)];
 }
 
 const char *

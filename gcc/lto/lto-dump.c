@@ -24,6 +24,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "function.h"
 #include "basic-block.h"
 #include "tree.h"
+#include "tree-cfg.h"
 #include "gimple.h"
 #include "cgraph.h"
 #include "lto-streamer.h"
@@ -36,13 +37,14 @@ along with GCC; see the file COPYING3.  If not see
 #include "stdio.h"
 #include "lto.h"
 
+
 /* Dump everything.  */
-void 
+void
 dump ()
 {
 	fprintf(stderr, "\nHello World!\n");
 }
-	
+
 /* Dump variables and functions used in IL.  */
 void
 dump_list ()
@@ -53,10 +55,14 @@ dump_list ()
     fprintf (stderr, "\t\tName \t\tType \t\tVisibility\n");
 	FOR_EACH_SYMBOL (node)
 	{
-		fprintf (stderr, "\n%20s",(flag_lto_dump_demangle) 
-			? node->name (): node->dump_asm_name ());
+    	const char *x = strchr (node->asm_name (), '/');
+    	if (flag_lto_dump_demangle)
+			fprintf (stderr, "\n%20s", node->name ());
+		else
+			fprintf (stderr, "\n%20s", node->asm_name (), 
+				node->asm_name ()-x);
 		fprintf (stderr, "%20s", node->dump_type_name ());
-		fprintf (stderr, "%20s\n", node->dump_visibility ());
+		fprintf (stderr, "%20s", node->dump_visibility ());
 	}
 }
 
@@ -67,13 +73,19 @@ dump_symbol ()
 	symtab_node *node;
     fprintf (stderr, "\t\tName \t\tType \t\tVisibility\n");
 	FOR_EACH_SYMBOL (node)
-	{
-		if (!strcmp(flag_lto_dump_symbol, node->name()))
+		if (!strcmp (flag_lto_dump_symbol, node->name ()))
+			node->debug ();
+}
+
+/* Dump gimple body of specific function.  */
+void
+dump_body ()
+{
+	cgraph_node *cnode;
+	FOR_EACH_FUNCTION (cnode)
+		if (!strcmp (cnode->name (), flag_lto_dump_body))
 		{
-			fprintf (stderr, "\n%20s",(flag_lto_dump_demangle) 
-				? node->name (): node->dump_asm_name ());
-		fprintf (stderr, "%20s", node->dump_type_name ());
-		fprintf (stderr, "%20s\n", node->dump_visibility ());
+			cnode->get_untransformed_body ();
+			debug_function (cnode->decl, 0);
 		}
-	}	
 }	
