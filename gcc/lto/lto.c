@@ -1796,6 +1796,7 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	  data_in->location_cache.accept_location_cache ();
 
 	  bool seen_type = false;
+ 
 	  for (unsigned i = 0; i < len; ++i)
 	    {
 	      tree t = streamer_tree_cache_get_tree (data_in->reader_cache,
@@ -1803,7 +1804,7 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	      /* Reconstruct the type variant and pointer-to/reference-to
 		 chains.  */
 	      if (TYPE_P (t))
-		{
+		{ 
 		  seen_type = true;
 		  num_prevailing_types++;
 		  lto_fixup_prevailing_type (t);

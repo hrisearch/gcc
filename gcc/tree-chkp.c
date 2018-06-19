@@ -376,6 +376,7 @@ struct hash_map<tree, tree> *chkp_reg_addr_bounds;
 struct hash_map<tree, tree> *chkp_incomplete_bounds_map;
 struct hash_map<tree, tree> *chkp_bounds_map;
 struct hash_map<tree, tree> *chkp_static_var_bounds;
+struct hash_map<tree, int> *chkp_static_var_bounds;
 
 static bool in_chkp_pass;
 
