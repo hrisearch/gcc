@@ -1799,9 +1799,6 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	  data_in->location_cache.accept_location_cache ();
 
 	  bool seen_type = false;
-
-
-
 	  for (unsigned i = 0; i < len; ++i)
 	    {
 	      tree t = streamer_tree_cache_get_tree (data_in->reader_cache,
@@ -1810,14 +1807,14 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 		 chains.  */
 	      if (TYPE_P (t))
 		{ 
-      itr = stats.find(TREE_CODE(t));
-      if (itr == stats.end())
+      if (flag_lto_dump_tree_type_stats)
       {
-        stats.insert(std :: pair <tree_code, int> (TREE_CODE(t), 1));
-      }
-      else
-        itr->second++;
-
+        itr = stats.find(TREE_CODE(t));
+        if (itr == stats.end())
+          stats.insert(std :: pair <tree_code, int> (TREE_CODE(t), 1));
+        else
+          itr->second++;
+      }  
 		  seen_type = true;
 		  num_prevailing_types++;
 		  lto_fixup_prevailing_type (t);
@@ -1865,10 +1862,9 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	}
     }
     fprintf(stderr, "\n");
-    for (itr = stats.begin(); itr != stats.end(); ++itr)
-    {
-      fprintf(stderr, "\t%s\t%d\n", get_tree_code_name(itr->first), itr->second );
-    }
+    if (flag_lto_dump_tree_type_stats)
+      for (itr = stats.begin(); itr != stats.end(); ++itr)
+        fprintf(stderr, "\t%s\t%d\n", get_tree_code_name(itr->first), itr->second );
 
   data_in->location_cache.apply_location_cache ();
 

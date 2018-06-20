@@ -77,6 +77,9 @@ LTO Driver RejectNegative Joined Var(flag_lto_dump_symbol)
 demangle
 LTO Var(flag_lto_dump_demangle)
 
+fdump-lto-tree-type-stats
+LTO Var(flag_lto_dump_tree_type_stats)
+
 fdump-lto-body=
 LTO Driver RejectNegative Joined Var(flag_lto_dump_body)
 
