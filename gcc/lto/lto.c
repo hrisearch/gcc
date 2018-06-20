@@ -1757,7 +1757,8 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 
   /* We do not uniquify the pre-loaded cache entries, those are middle-end
      internal types that should not be merged.  */
-
+  std :: map <tree_code, int> stats; 
+  std :: map <tree_code, int> :: iterator itr;
   /* Read the global declarations and types.  */
   while (ib_main.p < ib_main.len)
     {
@@ -1799,8 +1800,7 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 
 	  bool seen_type = false;
 
-    std :: map <tree, int> stats; 
-    std :: map <tree, int> :: iterator itr;
+
 
 	  for (unsigned i = 0; i < len; ++i)
 	    {
@@ -1810,9 +1810,11 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 		 chains.  */
 	      if (TYPE_P (t))
 		{ 
-      itr = stats.find(t);
+      itr = stats.find(TREE_CODE(t));
       if (itr == stats.end())
-        stats.insert(std :: pair <tree, int> (t, 1));
+      {
+        stats.insert(std :: pair <tree_code, int> (TREE_CODE(t), 1));
+      }
       else
         itr->second++;
 
@@ -1844,12 +1846,7 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 		}
 	    }
 
-       for (itr = stats.begin(); itr != stats.end(); ++itr)
-      {
-        fprintf(stderr, "\t%s\t%d\n", get_tree_code_name(TREE_CODE(itr->first)), itr->second );
-      }
-    fprintf(stderr, "\n" );
-
+ 
 	  /* Register DECLs with the debuginfo machinery.  */
 	  while (!dref_queue.is_empty ())
 	    {
@@ -1867,6 +1864,12 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	  gcc_assert (t && data_in->reader_cache->nodes.length () == from);
 	}
     }
+    fprintf(stderr, "\n");
+    for (itr = stats.begin(); itr != stats.end(); ++itr)
+    {
+      fprintf(stderr, "\t%s\t%d\n", get_tree_code_name(itr->first), itr->second );
+    }
+
   data_in->location_cache.apply_location_cache ();
 
   /* Read in lto_in_decl_state objects.  */
