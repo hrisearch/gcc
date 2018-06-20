@@ -56,6 +56,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "attribs.h"
 #include "builtins.h"
 #include "lto-dump.h"
+#include "map"
+#include "iterator"
 
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
 static int lto_parallelism;
@@ -1796,7 +1798,10 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	  data_in->location_cache.accept_location_cache ();
 
 	  bool seen_type = false;
- 
+
+    std :: map <tree, int> stats; 
+    std :: map <tree, int> :: iterator itr;
+
 	  for (unsigned i = 0; i < len; ++i)
 	    {
 	      tree t = streamer_tree_cache_get_tree (data_in->reader_cache,
@@ -1805,6 +1810,12 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 		 chains.  */
 	      if (TYPE_P (t))
 		{ 
+      itr = stats.find(t);
+      if (itr == stats.end())
+        stats.insert(std :: pair <tree, int> (t, 1));
+      else
+        itr->second++;
+
 		  seen_type = true;
 		  num_prevailing_types++;
 		  lto_fixup_prevailing_type (t);
@@ -1832,6 +1843,12 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 		    vec_safe_push (tree_with_vars, t);
 		}
 	    }
+
+       for (itr = stats.begin(); itr != stats.end(); ++itr)
+      {
+        fprintf(stderr, "\t%s\t%d\n", get_tree_code_name(TREE_CODE(itr->first)), itr->second );
+      }
+    fprintf(stderr, "\n" );
 
 	  /* Register DECLs with the debuginfo machinery.  */
 	  while (!dref_queue.is_empty ())
