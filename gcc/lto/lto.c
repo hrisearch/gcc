@@ -55,7 +55,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "fold-const.h"
 #include "attribs.h"
 #include "builtins.h"
-#include "lto-dump.h"
 
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
 static int lto_parallelism;
@@ -3360,11 +3359,6 @@ lto_main (void)
   /* Read all the symbols and call graph from all the files in the
      command line.  */
   read_cgraph_and_symbols (num_in_fnames, in_fnames);
-
-  if (flag_lto_dump)
-  {
-    dump();
-  }
 
   timevar_stop (TV_PHASE_STREAM_IN);
 
