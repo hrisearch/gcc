@@ -67,6 +67,14 @@ fdump
 LTO Var(flag_lto_dump)
 Call the dump function
 
+fdump-lto-tree-stats
+LTO Var(flag_lto_tree_stats)
+Dump the statistics of trees
+
+fdump-lto-gimple-stats
+LTO Var(flag_lto_gimple_stats)
+Dump the statistics of gimple statements
+
 fresolution=
 LTO Joined
 The resolution file.

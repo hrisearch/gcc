@@ -21,7 +21,6 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef LTO_H
 #define LTO_H
 
-
 /* A file.  */
 struct lto_file
 {
