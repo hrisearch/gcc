@@ -20,9 +20,8 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_LTO_DUMP_H_
 #define GCC_LTO_DUMP_H_
 
-void dump();
-
 /* A file.  */
+
 struct lto_file
 {
   /* The name of the file.  */

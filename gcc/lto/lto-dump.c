@@ -56,10 +56,119 @@ along with GCC; see the file COPYING3.  If not see
 #include "attribs.h"
 #include "builtins.h"
 #include "print-tree.h"
+#include "stdio.h"
+#include "tree-cfg.h"
+#include "string.h"
+#include "iostream"
+#include "vector"
 
+class entry
+{
+public:
+	char name[20], type_name[20], visibility[20];
+	int size;
+};
+
+int compare(const void * a, const void * b)
+{
+	entry* ep1 = (entry*)a;
+	entry* ep2 = (entry*)b;
+	if (flag_lto_alpha_sort)
+		return strcmp(ep1->name,ep2->name);
+	else if (flag_lto_size_sort)
+		return ep1->size - ep2->size;
+	else
+		return strcmp(ep1->name,ep2->name);
+}
+
+/* Dump everything.  */
 static void dump()
 {
 	fprintf(stderr, "\nHello World!\n");
+}
+
+/* Dump variables and functions used in IL.  */
+void
+dump_list ()
+{
+	entry e;
+	std::vector <entry> vec;
+	std::vector <entry> :: iterator i;
+	std::vector <entry> :: reverse_iterator ir;
+	fprintf (stderr, "Symbol Table\n");
+    symtab_node *node;
+    fprintf (stderr, "\t\tName \t\tType \t\tVisibility \t\tSize\n");
+	if (!flag_lto_dump_defined)
+	{
+		FOR_EACH_SYMBOL (node)
+		{
+	    if (flag_lto_dump_demangle)
+				strcpy(e.name,node->name());
+		  else if (flag_lto_dump_no_demangle)
+				strcpy(e.name,node->asm_name());
+			else			
+				strcpy(e.name,node->asm_name());
+			strcpy(e.type_name, node->dump_type_name ());
+		  strcpy(e.visibility, node->dump_visibility ());
+			//e.size = TREE_INT_CST_LOW(DECL_SIZE(node->decl));
+			e.size = 0;
+			vec.push_back(e);
+		}
+	}
+	if (flag_lto_dump_defined)
+	{
+		FOR_EACH_DEFINED_SYMBOL (node)
+		{
+	    if (flag_lto_dump_demangle)
+				strcpy(e.name,node->name());
+		  else if (flag_lto_dump_no_demangle)
+				strcpy(e.name,node->asm_name());
+			else			
+				strcpy(e.name,node->asm_name());
+			strcpy(e.type_name, node->dump_type_name ());
+		  strcpy(e.visibility, node->dump_visibility ());
+			//e.size = TREE_INT_CST_LOW(DECL_SIZE(node->decl));
+			e.size = 0;
+			vec.push_back(e);
+		}
+	}
+	if (!flag_lto_no_sort)	
+	qsort(&vec.front(), vec.size(), sizeof(entry), compare);
+	if (!flag_lto_reverse_sort)
+		for (i = vec.begin(); i != vec.end(); ++i)
+    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s\t\t\n",i->name, i->type_name, i->visibility );
+  else
+  	for (ir = vec.rbegin(); ir != vec.rend(); ++ir)
+    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s\t\t\n",ir->name, ir->type_name, ir->visibility );	  
+}
+
+/* Dump specific variables and functions used in IL.  */
+void
+dump_symbol ()
+{
+	symtab_node *node;
+    fprintf (stderr, "Symbol:\t%s\n", flag_lto_dump_symbol);
+	FOR_EACH_SYMBOL (node)
+		if (!strcmp (flag_lto_dump_symbol, node->name ()))
+			node->debug ();
+   // node = symtab->find_symbol_by_name(flag_lto_dump_symbol);
+   //  if (node)
+	  //  node->debug ();
+	  fprintf(stderr, "\n" );
+}
+
+/* Dump gimple body of specific function.  */
+void
+dump_body ()
+{
+	fprintf(stderr, "Gimple body of function: %s\n", flag_lto_dump_body);
+	cgraph_node *cnode;
+	FOR_EACH_FUNCTION (cnode)
+		if (!strcmp (cnode->name (), flag_lto_dump_body))
+		{
+			cnode->get_untransformed_body ();
+			debug_function (cnode->decl, 0);
+		}
 }
 
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
@@ -3368,15 +3477,29 @@ lto_main (void)
 
   if (flag_lto_gimple_stats)
 	  dump_gimple_statistics();
+
   if (flag_lto_tree_stats)
   {
   	fprintf(stderr, "Tree Statistics\n" );
 	dump_tree_statistics();
   }
+
+  /* Dump everything.  */
   if (flag_lto_dump)
-  {
     dump();
-  }
+
+    /* Dump variables and functions used in IL.  */
+  if (flag_lto_dump_list)
+    dump_list ();
+
+  /* Dump specific variables and functions used in IL.  */
+  if (flag_lto_dump_symbol)
+    dump_symbol ();
+
+  /* Dump gimple body of specific function.  */
+  if (flag_lto_dump_body)
+    dump_body ();
+
 
   timevar_stop (TV_PHASE_STREAM_IN);
 
