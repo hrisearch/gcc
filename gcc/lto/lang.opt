@@ -86,6 +86,14 @@ defined-only
 LTO Var(flag_lto_dump_defined)
 Dump only the defined symbols.
 
+print-size
+LTO Var(flag_lto_print_size)
+Print the size of the symbols.
+
+print-value
+LTO Var(flag_lto_print_value)
+Print the initial values of the variables.
+
 alpha-sort
 LTO Var(flag_lto_alpha_sort)
 Sort the symbols alphabetically.
@@ -107,11 +115,11 @@ LTO Driver RejectNegative Joined Var(flag_lto_dump_body)
 
 fdump-lto-tree-stats
 LTO Var(flag_lto_tree_stats)
-Dump the statistics of trees
+Dump the statistics of trees.
 
 fdump-lto-gimple-stats
 LTO Var(flag_lto_gimple_stats)
-Dump the statistics of gimple statements
+Dump the statistics of gimple statements.
 
 fresolution=
 LTO Joined

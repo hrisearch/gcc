@@ -27,7 +27,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "basic-block.h"
 #include "tree.h"
 #include "gimple.h"
+#include "cfg.h"
 #include "cfghooks.h"
+#include "tree-cfg.h"
 #include "alloc-pool.h"
 #include "tree-pass.h"
 #include "tree-streamer.h"
@@ -56,17 +58,17 @@ along with GCC; see the file COPYING3.  If not see
 #include "attribs.h"
 #include "builtins.h"
 #include "print-tree.h"
-#include "stdio.h"
-#include "tree-cfg.h"
-#include "string.h"
-#include "iostream"
-#include "vector"
+#include "tree-pretty-print.h"
+#include <map>
+#include <iterator>
+#include <vector>
 
 class entry
 {
 public:
-	char name[20], type_name[20], visibility[20];
+	char *name, *type_name, *visibility;
 	int size;
+	tree value_tree;
 };
 
 int compare(const void * a, const void * b)
@@ -91,44 +93,39 @@ static void dump()
 void
 dump_list ()
 {
-	entry e;
 	std::vector <entry> vec;
 	std::vector <entry> :: iterator i;
 	std::vector <entry> :: reverse_iterator ir;
+	
 	fprintf (stderr, "Symbol Table\n");
-    symtab_node *node;
-    fprintf (stderr, "\t\tName \t\tType \t\tVisibility \t\tSize\n");
-	if (!flag_lto_dump_defined)
+  cgraph_node *cnode;
+  varpool_node *vnode;
+  
+  fprintf (stderr, "\t\tName \t\tType \t\tVisibility ");
+  if (flag_lto_print_size)
+	  fprintf(stderr, "\t\tSize ");
+  if (flag_lto_print_value)
+  	fprintf(stderr, "\t\tValue");
+  fprintf(stderr, "\n\n");
+	FOR_EACH_FUNCTION (cnode)
 	{
-		FOR_EACH_SYMBOL (node)
+		entry e;
+		if(!flag_lto_dump_defined || cnode->definition)
 		{
 	    if (flag_lto_dump_demangle)
-				strcpy(e.name,node->name());
+				e.name = xstrdup(cnode->name());
 		  else if (flag_lto_dump_no_demangle)
-				strcpy(e.name,node->asm_name());
+				e.name = xstrdup(cnode->asm_name());
 			else			
-				strcpy(e.name,node->asm_name());
-			strcpy(e.type_name, node->dump_type_name ());
-		  strcpy(e.visibility, node->dump_visibility ());
-			//e.size = TREE_INT_CST_LOW(DECL_SIZE(node->decl));
+				e.name = xstrdup(cnode->asm_name());
+			e.type_name = xstrdup(cnode->dump_type_name ());
+		  e.visibility = xstrdup(cnode->dump_visibility ());
 			e.size = 0;
-			vec.push_back(e);
-		}
-	}
-	if (flag_lto_dump_defined)
-	{
-		FOR_EACH_DEFINED_SYMBOL (node)
-		{
-	    if (flag_lto_dump_demangle)
-				strcpy(e.name,node->name());
-		  else if (flag_lto_dump_no_demangle)
-				strcpy(e.name,node->asm_name());
-			else			
-				strcpy(e.name,node->asm_name());
-			strcpy(e.type_name, node->dump_type_name ());
-		  strcpy(e.visibility, node->dump_visibility ());
-			//e.size = TREE_INT_CST_LOW(DECL_SIZE(node->decl));
-			e.size = 0;
+		  if (cnode->definition)
+	    {
+	    	cnode->get_untransformed_body ();
+	    	e.size = n_basic_blocks_for_fn(DECL_STRUCT_FUNCTION(cnode->decl));
+	    }
 			vec.push_back(e);
 		}
 	}
@@ -136,10 +133,68 @@ dump_list ()
 	qsort(&vec.front(), vec.size(), sizeof(entry), compare);
 	if (!flag_lto_reverse_sort)
 		for (i = vec.begin(); i != vec.end(); ++i)
-    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s\t\t\n",i->name, i->type_name, i->visibility );
+		{
+    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s",i->name, i->type_name, i->visibility );
+			if (flag_lto_print_size)
+				fprintf(stderr, "\t\t%d", i->size);
+			fprintf(stderr, "\n");
+		}
   else
   	for (ir = vec.rbegin(); ir != vec.rend(); ++ir)
-    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s\t\t\n",ir->name, ir->type_name, ir->visibility );	  
+  	{
+    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s\n",ir->name, ir->type_name, ir->visibility );	  
+			if (flag_lto_print_size)
+				fprintf(stderr, "\t\t%d\n", ir->size);
+			fprintf(stderr, "\n");
+		}
+  vec.clear();  
+  fprintf(stderr, "\n");
+
+	FOR_EACH_VARIABLE (vnode)
+	{
+		entry e;
+  	if(!flag_lto_dump_defined || vnode->definition)
+		{
+		  if (flag_lto_dump_demangle)
+				e.name = xstrdup (vnode->name());
+		  else if (flag_lto_dump_no_demangle)
+				e.name = xstrdup (vnode->asm_name());
+			else
+				e.name = xstrdup (vnode->asm_name());
+			e.type_name = xstrdup (vnode->dump_type_name ());
+		  e.visibility = xstrdup (vnode->dump_visibility ());
+			e.size = 0;
+   		if (DECL_SIZE (vnode->decl) && tree_fits_shwi_p (DECL_SIZE (vnode->decl)))
+				e.size = tree_to_shwi (DECL_SIZE (vnode->decl));
+			vnode->get_constructor ();
+			e.value_tree = DECL_INITIAL (vnode->decl);
+			vec.push_back(e);
+		}
+	}
+	if (!flag_lto_no_sort)	
+	qsort(&vec.front(), vec.size(), sizeof(entry), compare);
+	if (!flag_lto_reverse_sort)
+		for (i = vec.begin(); i != vec.end(); ++i)
+		{
+    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s",i->name, i->type_name, i->visibility );
+      if (flag_lto_print_size)
+				fprintf(stderr, "\t\t%d\t\t", i->size);
+			if (flag_lto_print_value && i->value_tree)
+      	debug_generic_expr (i->value_tree);
+			else
+				fprintf(stderr, "\n");
+		}
+  else
+  	for (ir = vec.rbegin(); ir != vec.rend(); ++ir)
+  	{
+    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s",ir->name, ir->type_name, ir->visibility );	  
+      if (flag_lto_print_size)
+				fprintf(stderr, "\t\t%d\t\t", ir->size);
+			if (flag_lto_print_value && ir->value_tree)
+      	debug_generic_expr (i->value_tree);
+			else
+				fprintf(stderr, "\n");
+		}
 }
 
 /* Dump specific variables and functions used in IL.  */
@@ -151,24 +206,7 @@ dump_symbol ()
 	FOR_EACH_SYMBOL (node)
 		if (!strcmp (flag_lto_dump_symbol, node->name ()))
 			node->debug ();
-   // node = symtab->find_symbol_by_name(flag_lto_dump_symbol);
-   //  if (node)
-	  //  node->debug ();
 	  fprintf(stderr, "\n" );
-}
-
-/* Dump gimple body of specific function.  */
-void
-dump_body ()
-{
-	fprintf(stderr, "Gimple body of function: %s\n", flag_lto_dump_body);
-	cgraph_node *cnode;
-	FOR_EACH_FUNCTION (cnode)
-		if (!strcmp (cnode->name (), flag_lto_dump_body))
-		{
-			cnode->get_untransformed_body ();
-			debug_function (cnode->decl, 0);
-		}
 }
 
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
@@ -1963,6 +2001,7 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	  gcc_assert (t && data_in->reader_cache->nodes.length () == from);
 	}
     }
+
   data_in->location_cache.apply_location_cache ();
 
   /* Read in lto_in_decl_state objects.  */
@@ -3475,13 +3514,15 @@ lto_main (void)
      command line.  */
   read_cgraph_and_symbols (num_in_fnames, in_fnames);
 
-  if (flag_lto_gimple_stats)
-	  dump_gimple_statistics();
+	if (flag_lto_gimple_stats)
+	{
+		dump_gimple_statistics();
+	}
 
   if (flag_lto_tree_stats)
   {
   	fprintf(stderr, "Tree Statistics\n" );
-	dump_tree_statistics();
+		dump_tree_statistics();
   }
 
   /* Dump everything.  */
@@ -3495,11 +3536,6 @@ lto_main (void)
   /* Dump specific variables and functions used in IL.  */
   if (flag_lto_dump_symbol)
     dump_symbol ();
-
-  /* Dump gimple body of specific function.  */
-  if (flag_lto_dump_body)
-    dump_body ();
-
 
   timevar_stop (TV_PHASE_STREAM_IN);
 
