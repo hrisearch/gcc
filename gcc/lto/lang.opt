@@ -67,11 +67,11 @@ fdump
 LTO Var(flag_lto_dump)
 Call the dump function
 
-fdump-lto-list
+list
 LTO Var(flag_lto_dump_list)
 Call the dump function for variables and function in IL.
 
-fdump-lto-symbol=
+symbol=
 LTO Driver RejectNegative Joined Var(flag_lto_dump_symbol)
 
 demangle
@@ -110,14 +110,18 @@ no-sort
 LTO Var(flag_lto_no_sort)
 Display the symbols in order of occurence.
 
-fdump-lto-body=
+body=
 LTO Driver RejectNegative Joined Var(flag_lto_dump_body)
 
-fdump-lto-tree-stats
+type-stats
+LTO Var(flag_lto_dump_type_stats)
+Dump the statistics of tree types.
+
+tree-stats
 LTO Var(flag_lto_tree_stats)
 Dump the statistics of trees.
 
-fdump-lto-gimple-stats
+gimple-stats
 LTO Var(flag_lto_gimple_stats)
 Dump the statistics of gimple statements.
 

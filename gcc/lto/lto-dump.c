@@ -71,22 +71,23 @@ public:
 	tree value_tree;
 };
 
-int compare(const void * a, const void * b)
+/* Compare function for qsort.  */
+int compare (const void * a, const void * b)
 {
 	entry* ep1 = (entry*)a;
 	entry* ep2 = (entry*)b;
 	if (flag_lto_alpha_sort)
-		return strcmp(ep1->name,ep2->name);
+		return strcmp (ep1->name,ep2->name);
 	else if (flag_lto_size_sort)
 		return ep1->size - ep2->size;
 	else
-		return strcmp(ep1->name,ep2->name);
+		return strcmp (ep1->name,ep2->name);
 }
 
 /* Dump everything.  */
-static void dump()
+static void dump ()
 {
-	fprintf(stderr, "\nHello World!\n");
+	fprintf (stderr, "\nHello World!\n");
 }
 
 /* Dump variables and functions used in IL.  */
@@ -100,7 +101,7 @@ dump_list ()
 	fprintf (stderr, "Symbol Table\n");
   cgraph_node *cnode;
   varpool_node *vnode;
-  
+
   fprintf (stderr, "\t\tName \t\tType \t\tVisibility ");
   if (flag_lto_print_size)
 	  fprintf(stderr, "\t\tSize ");
@@ -110,45 +111,48 @@ dump_list ()
 	FOR_EACH_FUNCTION (cnode)
 	{
 		entry e;
-		if(!flag_lto_dump_defined || cnode->definition)
+		if (!flag_lto_dump_defined || cnode->definition)
 		{
 	    if (flag_lto_dump_demangle)
-				e.name = xstrdup(cnode->name());
+				e.name = xstrdup (cnode->name ());
 		  else if (flag_lto_dump_no_demangle)
-				e.name = xstrdup(cnode->asm_name());
-			else			
-				e.name = xstrdup(cnode->asm_name());
-			e.type_name = xstrdup(cnode->dump_type_name ());
-		  e.visibility = xstrdup(cnode->dump_visibility ());
+				e.name = xstrdup (cnode->asm_name ());
+			else
+				e.name = xstrdup (cnode->asm_name ());
+			e.type_name = xstrdup (cnode->dump_type_name ());
+		  e.visibility = xstrdup (cnode->dump_visibility ());
 			e.size = 0;
 		  if (cnode->definition)
 	    {
 	    	cnode->get_untransformed_body ();
-	    	e.size = n_basic_blocks_for_fn(DECL_STRUCT_FUNCTION(cnode->decl));
+	    	e.size = n_basic_blocks_for_fn
+	    	(DECL_STRUCT_FUNCTION (cnode->decl));
 	    }
-			vec.push_back(e);
+			vec.push_back (e);
 		}
 	}
 	if (!flag_lto_no_sort)	
-	qsort(&vec.front(), vec.size(), sizeof(entry), compare);
+	qsort (&vec.front (), vec.size (), sizeof (entry), compare);
 	if (!flag_lto_reverse_sort)
-		for (i = vec.begin(); i != vec.end(); ++i)
+		for (i = vec.begin (); i != vec.end (); ++i)
 		{
-    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s",i->name, i->type_name, i->visibility );
+    	fprintf (stderr, "\t\t%s\t\t%s\t\t%s",i->name, i->type_name,
+    		i->visibility);
 			if (flag_lto_print_size)
-				fprintf(stderr, "\t\t%d", i->size);
-			fprintf(stderr, "\n");
+				fprintf (stderr, "\t\t%d", i->size);
+			fprintf (stderr, "\n");
 		}
   else
-  	for (ir = vec.rbegin(); ir != vec.rend(); ++ir)
+  	for (ir = vec.rbegin (); ir != vec.rend (); ++ir)
   	{
-    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s\n",ir->name, ir->type_name, ir->visibility );	  
+    	fprintf (stderr, "\t\t%s\t\t%s\t\t%s\n",ir->name, ir->type_name,
+    		ir->visibility);
 			if (flag_lto_print_size)
-				fprintf(stderr, "\t\t%d\n", ir->size);
-			fprintf(stderr, "\n");
+				fprintf (stderr, "\t\t%d\n", ir->size);
+			fprintf (stderr, "\n");
 		}
-  vec.clear();  
-  fprintf(stderr, "\n");
+  vec.clear ();
+  fprintf (stderr, "\n");
 
 	FOR_EACH_VARIABLE (vnode)
 	{
@@ -156,11 +160,11 @@ dump_list ()
   	if(!flag_lto_dump_defined || vnode->definition)
 		{
 		  if (flag_lto_dump_demangle)
-				e.name = xstrdup (vnode->name());
+				e.name = xstrdup (vnode->name ());
 		  else if (flag_lto_dump_no_demangle)
-				e.name = xstrdup (vnode->asm_name());
+				e.name = xstrdup (vnode->asm_name ());
 			else
-				e.name = xstrdup (vnode->asm_name());
+				e.name = xstrdup (vnode->asm_name ());
 			e.type_name = xstrdup (vnode->dump_type_name ());
 		  e.visibility = xstrdup (vnode->dump_visibility ());
 			e.size = 0;
@@ -168,32 +172,34 @@ dump_list ()
 				e.size = tree_to_shwi (DECL_SIZE (vnode->decl));
 			vnode->get_constructor ();
 			e.value_tree = DECL_INITIAL (vnode->decl);
-			vec.push_back(e);
+			vec.push_back (e);
 		}
 	}
-	if (!flag_lto_no_sort)	
-	qsort(&vec.front(), vec.size(), sizeof(entry), compare);
+	if (!flag_lto_no_sort)
+	qsort (&vec.front (), vec.size (), sizeof (entry), compare);
 	if (!flag_lto_reverse_sort)
-		for (i = vec.begin(); i != vec.end(); ++i)
+		for (i = vec.begin (); i != vec.end (); ++i)
 		{
-    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s",i->name, i->type_name, i->visibility );
+    	fprintf (stderr, "\t\t%s\t\t%s\t\t%s",i->name, i->type_name,
+    		i->visibility);
       if (flag_lto_print_size)
-				fprintf(stderr, "\t\t%d\t\t", i->size);
+				fprintf (stderr, "\t\t%d\t\t", i->size);
 			if (flag_lto_print_value && i->value_tree)
       	debug_generic_expr (i->value_tree);
 			else
-				fprintf(stderr, "\n");
+				fprintf (stderr, "\n");
 		}
   else
   	for (ir = vec.rbegin(); ir != vec.rend(); ++ir)
   	{
-    	fprintf(stderr, "\t\t%s\t\t%s\t\t%s",ir->name, ir->type_name, ir->visibility );	  
+    	fprintf (stderr, "\t\t%s\t\t%s\t\t%s",ir->name, ir->type_name,
+    		ir->visibility);
       if (flag_lto_print_size)
-				fprintf(stderr, "\t\t%d\t\t", ir->size);
+				fprintf (stderr, "\t\t%d\t\t", ir->size);
 			if (flag_lto_print_value && ir->value_tree)
       	debug_generic_expr (i->value_tree);
 			else
-				fprintf(stderr, "\n");
+				fprintf (stderr, "\n");
 		}
 }
 
@@ -206,7 +212,7 @@ dump_symbol ()
 	FOR_EACH_SYMBOL (node)
 		if (!strcmp (flag_lto_dump_symbol, node->name ()))
 			node->debug ();
-	  fprintf(stderr, "\n" );
+	  fprintf (stderr, "\n");
 }
 
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
@@ -1907,7 +1913,9 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 
   /* We do not uniquify the pre-loaded cache entries, those are middle-end
      internal types that should not be merged.  */
-
+	std :: map <tree_code, int> stats;
+  std :: map <tree_code, int> :: iterator itr;
+  int total = 0;
   /* Read the global declarations and types.  */
   while (ib_main.p < ib_main.len)
     {
@@ -1956,6 +1964,18 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 		 chains.  */
 	      if (TYPE_P (t))
 		{
+			/* Map the tree types to their frequencies.  */
+			print_node_brief (stderr, "", t, 0);
+			if (flag_lto_dump_type_stats)
+			{
+			  itr = stats.find (TREE_CODE (t));
+			  if (itr == stats.end ())
+			    stats.insert (std :: pair <tree_code, int>
+			    	(TREE_CODE (t), 1));
+			  else
+			    itr->second++;
+			  total++;
+			}
 		  seen_type = true;
 		  num_prevailing_types++;
 		  lto_fixup_prevailing_type (t);
@@ -2001,6 +2021,13 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	  gcc_assert (t && data_in->reader_cache->nodes.length () == from);
 	}
     }
+		fprintf (stderr, "\n");
+		/* Dump the tree type stats.  */
+		if (flag_lto_dump_type_stats)
+		  for (itr = stats.begin (); itr != stats.end (); ++itr)
+		    fprintf (stderr, "\t%s\t%d\t%0.2f%\n",
+		     get_tree_code_name (itr->first)
+		    	, itr->second, float (itr->second)/total*100);
 
   data_in->location_cache.apply_location_cache ();
 
@@ -3514,20 +3541,22 @@ lto_main (void)
      command line.  */
   read_cgraph_and_symbols (num_in_fnames, in_fnames);
 
+	/* Dump gimple statement statistics.  */
 	if (flag_lto_gimple_stats)
 	{
-		dump_gimple_statistics();
+		dump_gimple_statistics ();
 	}
 
+	/* Dump tree statistics.  */
   if (flag_lto_tree_stats)
   {
-  	fprintf(stderr, "Tree Statistics\n" );
-		dump_tree_statistics();
+  	fprintf (stderr, "Tree Statistics\n");
+		dump_tree_statistics ();
   }
 
   /* Dump everything.  */
   if (flag_lto_dump)
-    dump();
+    dump ();
 
     /* Dump variables and functions used in IL.  */
   if (flag_lto_dump_list)
