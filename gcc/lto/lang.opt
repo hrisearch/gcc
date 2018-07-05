@@ -110,6 +110,10 @@ no-sort
 LTO Var(flag_lto_no_sort)
 Display the symbols in order of occurence.
 
+objects
+LTO Var(flag_lto_dump_objects)
+Dump the details of LTO objects.
+
 body=
 LTO Driver RejectNegative Joined Var(flag_lto_dump_body)
 
