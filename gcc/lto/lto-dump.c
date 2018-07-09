@@ -3553,10 +3553,13 @@ lto_main (void)
   read_cgraph_and_symbols (num_in_fnames, in_fnames);
 
 	/* Dump gimple statement statistics.  */
-	if (flag_lto_gimple_stats)
-	{
+  if (flag_lto_gimple_stats)
+  {
+		cgraph_node *node;
+		FOR_EACH_DEFINED_FUNCTION (node)
+		 node->get_untransformed_body ();
 		dump_gimple_statistics ();
-	}
+  }
 
 	/* Dump tree statistics.  */
   if (flag_lto_tree_stats)
