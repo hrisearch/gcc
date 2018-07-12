@@ -117,6 +117,15 @@ Dump the details of LTO objects.
 body=
 LTO Driver RejectNegative Joined Var(flag_lto_dump_body)
 
+optimized-blocks=
+LTO Driver RejectNegative Joined Var(flag_tree_optimized_blocks)
+
+optimized-stats=
+LTO Driver RejectNegative Joined Var(flag_tree_optimized_stats)
+
+optimized-vops=
+LTO Driver RejectNegative Joined Var(flag_tree_optimized_vops)
+
 type-stats
 LTO Var(flag_lto_dump_type_stats)
 Dump the statistics of tree types.

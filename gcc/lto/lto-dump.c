@@ -215,6 +215,66 @@ dump_symbol ()
 	  fprintf (stderr, "\n");
 }
 
+/* Dump gimple body (TDF_NONE) of specific function.  */
+void
+dump_body_none ()
+{
+	fprintf (stderr, "Gimple body of function: %s\n",
+	    flag_lto_dump_body);
+	cgraph_node *cnode;
+	FOR_EACH_FUNCTION (cnode)
+		if (!strcmp (cnode->name (), flag_lto_dump_body))
+		{
+			cnode->get_untransformed_body ();
+			debug_function (cnode->decl, 0);
+		}
+}
+
+/* Dump gimple body (TDF_BLOCKS) of specific function.  */
+void
+dump_body_blocks ()
+{
+	fprintf (stderr, "Gimple body of function: %s\n",
+	    flag_tree_optimized_blocks);
+	cgraph_node *cnode;
+	FOR_EACH_FUNCTION (cnode)
+		if (!strcmp (cnode->name (), flag_tree_optimized_blocks))
+		{
+			cnode->get_untransformed_body ();
+			debug_function (cnode->decl, TDF_BLOCKS);
+		}
+}
+
+/* Dump gimple body (TDF_STATS) of specific function.  */
+void
+dump_body_stats ()
+{
+	fprintf (stderr, "Gimple body of function: %s\n",
+	    flag_tree_optimized_stats);
+	cgraph_node *cnode;
+	FOR_EACH_FUNCTION (cnode)
+		if (!strcmp (cnode->name (), flag_tree_optimized_stats))
+		{
+			cnode->get_untransformed_body ();
+			debug_function (cnode->decl, TDF_STATS);
+		}
+}
+
+/* Dump gimple body (TDF_VOPS) of specific function.  */
+void
+dump_body_vops ()
+{
+	fprintf (stderr, "Gimple body of function: %s\n",
+		  flag_tree_optimized_vops);
+	cgraph_node *cnode;
+	FOR_EACH_FUNCTION (cnode)
+		if (!strcmp (cnode->name (), flag_tree_optimized_vops))
+		{
+			cnode->get_untransformed_body ();
+			debug_function (cnode->decl, TDF_VOPS);
+		}
+}
+
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
 static int lto_parallelism;
 
@@ -3579,6 +3639,22 @@ lto_main (void)
   /* Dump specific variables and functions used in IL.  */
   if (flag_lto_dump_symbol)
     dump_symbol ();
+
+  /* Dump gimple body (TDF_NONE) of specific function.  */
+  if (flag_lto_dump_body)
+    dump_body_none ();
+
+  /* Dump gimple body (TDF_BLOCKS) of specific function.  */
+  if (flag_tree_optimized_blocks)
+    dump_body_blocks ();
+
+  /* Dump gimple body (TDF_STATS) of specific function.  */
+  if (flag_tree_optimized_stats)
+    dump_body_stats ();
+
+  /* Dump gimple body (TDF_VOPS) of specific function.  */
+  if (flag_tree_optimized_vops)
+    dump_body_vops ();
 
   timevar_stop (TV_PHASE_STREAM_IN);
 
