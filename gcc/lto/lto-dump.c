@@ -215,64 +215,29 @@ dump_symbol ()
 	  fprintf (stderr, "\n");
 }
 
-/* Dump gimple body (TDF_NONE) of specific function.  */
+/* Dump specific gimple bodies of all functions.  */
 void
-dump_body_none ()
+dump_body ()
 {
-	fprintf (stderr, "Gimple body of function: %s\n",
-	    flag_lto_dump_body);
-	cgraph_node *cnode;
-	FOR_EACH_FUNCTION (cnode)
-		if (!strcmp (cnode->name (), flag_lto_dump_body))
-		{
-			cnode->get_untransformed_body ();
-			debug_function (cnode->decl, 0);
-		}
-}
-
-/* Dump gimple body (TDF_BLOCKS) of specific function.  */
-void
-dump_body_blocks ()
-{
-	fprintf (stderr, "Gimple body of function: %s\n",
-	    flag_tree_optimized_blocks);
-	cgraph_node *cnode;
-	FOR_EACH_FUNCTION (cnode)
-		if (!strcmp (cnode->name (), flag_tree_optimized_blocks))
-		{
-			cnode->get_untransformed_body ();
-			debug_function (cnode->decl, TDF_BLOCKS);
-		}
-}
-
-/* Dump gimple body (TDF_STATS) of specific function.  */
-void
-dump_body_stats ()
-{
-	fprintf (stderr, "Gimple body of function: %s\n",
-	    flag_tree_optimized_stats);
-	cgraph_node *cnode;
-	FOR_EACH_FUNCTION (cnode)
-		if (!strcmp (cnode->name (), flag_tree_optimized_stats))
-		{
-			cnode->get_untransformed_body ();
-			debug_function (cnode->decl, TDF_STATS);
-		}
-}
-
-/* Dump gimple body (TDF_VOPS) of specific function.  */
-void
-dump_body_vops ()
-{
-	fprintf (stderr, "Gimple body of function: %s\n",
-		  flag_tree_optimized_vops);
-	cgraph_node *cnode;
-	FOR_EACH_FUNCTION (cnode)
-		if (!strcmp (cnode->name (), flag_tree_optimized_vops))
-		{
-			cnode->get_untransformed_body ();
-			debug_function (cnode->decl, TDF_VOPS);
-		}
+  dump_flags_t flags = TDF_NONE;
+  if (!strcmp (flag_optimized, "blocks"))
+    flags = TDF_BLOCKS;
+  else if (!strcmp (flag_optimized, "stats"))
+    flags = TDF_STATS;
+  else if (!strcmp (flag_optimized, "vops"))
+    flags = TDF_VOPS;
+  else if (!strcmp (flag_optimized, "none"))
+    flags = TDF_NONE;
+  cgraph_node *cnode;
+  FOR_EACH_FUNCTION (cnode)
+  {
+    if (cnode->definition)
+    {
+      fprintf (stderr, "Gimple body of function: %s\n", cnode->name ());
+      cnode->get_untransformed_body ();
+      debug_function (cnode->decl, flags);
+    }
+  }
 }
 
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
@@ -3640,21 +3605,9 @@ lto_main (void)
   if (flag_lto_dump_symbol)
     dump_symbol ();
 
-  /* Dump gimple body (TDF_NONE) of specific function.  */
-  if (flag_lto_dump_body)
-    dump_body_none ();
-
-  /* Dump gimple body (TDF_BLOCKS) of specific function.  */
-  if (flag_tree_optimized_blocks)
-    dump_body_blocks ();
-
-  /* Dump gimple body (TDF_STATS) of specific function.  */
-  if (flag_tree_optimized_stats)
-    dump_body_stats ();
-
-  /* Dump gimple body (TDF_VOPS) of specific function.  */
-  if (flag_tree_optimized_vops)
-    dump_body_vops ();
+  /* Dump specfic gimple body of all functions.  */
+  if (flag_optimized)
+    dump_body ();
 
   timevar_stop (TV_PHASE_STREAM_IN);
 
