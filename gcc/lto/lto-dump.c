@@ -27,6 +27,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "basic-block.h"
 #include "tree.h"
 #include "gimple.h"
+#include "cfg.h"
 #include "cfghooks.h"
 #include "alloc-pool.h"
 #include "tree-pass.h"
@@ -55,7 +56,171 @@ along with GCC; see the file COPYING3.  If not see
 #include "fold-const.h"
 #include "attribs.h"
 #include "builtins.h"
+#include "tree-pretty-print.h"
 
+struct symbol_entry
+{
+  symtab_node *node;
+  symbol_entry (symtab_node *node_): node (node_)
+  {}
+  char* get_name ()
+  {
+    if (flag_lto_dump_demangle)
+      return xstrdup (node->name ());
+    else if (flag_lto_dump_no_demangle)
+      return xstrdup (node->asm_name ());
+    else
+      return xstrdup (node->asm_name ());
+
+  }
+
+  virtual size_t get_size () = 0;
+  virtual void dump () = 0;
+};
+
+struct variable_entry: public symbol_entry
+{
+  variable_entry (varpool_node *node_): symbol_entry (node_)
+  {}
+  virtual size_t get_size ()
+  {
+    varpool_node *vnode = (varpool_node*)node;
+    if (DECL_SIZE (vnode->decl) && tree_fits_shwi_p (DECL_SIZE (vnode->decl)))
+      return tree_to_shwi (DECL_SIZE (vnode->decl));
+    return 0;
+  }
+  virtual void dump ()
+  {
+    const char *name = get_name ();
+    const char *type_name = node->dump_type_name ();
+    const char *visibility = node->dump_visibility ();
+    size_t sz = get_size ();
+    varpool_node *vnode = (varpool_node*)node;
+    vnode->get_constructor ();
+    tree value_tree = DECL_INITIAL (vnode->decl);
+    fprintf (stderr,"%10s %10s %10s %10zu\t", name, type_name, visibility, sz);
+    if (flag_lto_print_value && value_tree)
+      debug_generic_expr (value_tree);
+    else
+      fprintf (stderr, "\n");
+  }
+};
+
+
+struct function_entry: public symbol_entry
+{
+  function_entry (cgraph_node *node_): symbol_entry (node_)
+  {}
+
+  virtual size_t get_size ()
+  {
+    cgraph_node *cnode = dyn_cast<cgraph_node *> (node);
+    gcc_assert (cnode);
+
+    return (cnode->definition)
+	   ? n_basic_blocks_for_fn (DECL_STRUCT_FUNCTION (cnode->decl))
+	   : 0;
+  }
+  void dump ()
+  {
+    const char *name = get_name ();
+    const char *type_name = node->dump_type_name ();
+    const char *visibility = node->dump_visibility ();
+    size_t sz = get_size ();
+    fprintf (stderr,"%10s %10s %10s %10zu\n", name, type_name, visibility, sz);
+  }
+};
+
+
+int size_compare (const void *a, const void *b)
+{
+  symbol_entry *e1 = *(symbol_entry **) a;
+  symbol_entry *e2 = *(symbol_entry **) b;
+
+  return e1->get_size () - e2->get_size ();
+}
+
+int alpha_compare (const void *a, const void *b)
+{
+  symbol_entry *e1 = *(symbol_entry **) a;
+  symbol_entry *e2 = *(symbol_entry **) b;
+
+  return strcmp (e1->get_name (), e2->get_name ());
+}
+
+
+void dump_list_functions (void)
+{
+  auto_vec<symbol_entry *> v;
+
+  cgraph_node *cnode;
+  FOR_EACH_FUNCTION (cnode)
+  {
+    if (cnode->definition)
+      cnode->get_untransformed_body ();
+    symbol_entry *e = new function_entry (cnode);
+    if (!flag_lto_dump_defined || cnode->definition)
+      v.safe_push (e);
+  }
+
+  if (!flag_lto_no_sort)
+  {
+    if (flag_lto_size_sort)
+      v.qsort (size_compare);
+    else if (flag_lto_alpha_sort)
+      v.qsort (alpha_compare);
+  }
+  if (flag_lto_reverse_sort)
+    v.reverse ();
+
+  fprintf (stderr, "\n\tName\tType\tVisibility\tSize");
+  if (flag_lto_print_value)
+    fprintf (stderr, "\tValue");
+  fprintf (stderr, "\n\n");
+
+  int i=0;
+  symbol_entry* e;
+  FOR_EACH_VEC_ELT (v, i, e)
+    e->dump ();
+}
+
+
+void dump_list_variables (void)
+{
+  auto_vec<symbol_entry *> v;
+
+  varpool_node *vnode;
+  FOR_EACH_VARIABLE (vnode)
+  {
+    symbol_entry *e = new variable_entry (vnode);
+    if (!flag_lto_dump_defined || vnode->definition)
+      v.safe_push (e);
+  }
+
+  if (!flag_lto_no_sort)
+  {
+    if (flag_lto_size_sort)
+      v.qsort (size_compare);
+    else if (flag_lto_alpha_sort)
+      v.qsort (alpha_compare);
+  }
+
+
+  if (flag_lto_reverse_sort)
+    v.reverse ();
+
+  fprintf (stderr, "\n");
+  int i=0;
+  symbol_entry* e;
+  FOR_EACH_VEC_ELT (v, i, e)
+    e->dump ();
+}
+
+void dump_list (void)
+{
+  dump_list_functions ();
+  dump_list_variables ();
+}
 
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
 static int lto_parallelism;
@@ -3398,6 +3563,9 @@ lto_main (void)
   /* Read all the symbols and call graph from all the files in the
      command line.  */
   read_cgraph_and_symbols (num_in_fnames, in_fnames);
+
+  if (flag_lto_dump_list)
+    dump_list ();
 
   timevar_stop (TV_PHASE_STREAM_IN);
 

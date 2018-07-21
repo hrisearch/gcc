@@ -66,6 +66,42 @@ fwpa=
 LTO Driver RejectNegative Joined Var(flag_wpa)
 Whole program analysis (WPA) mode with number of parallel jobs specified.
 
+list
+LTO Var(flag_lto_dump_list)
+Call the dump function for variables and function in IL.
+
+demangle
+LTO Var(flag_lto_dump_demangle)
+Dump the demangled output.
+
+no-demangle
+LTO Var(flag_lto_dump_no_demangle)
+Dump the non-demangled output.
+
+defined-only
+LTO Var(flag_lto_dump_defined)
+Dump only the defined symbols.
+
+print-value
+LTO Var(flag_lto_print_value)
+Print the initial values of the variables.
+
+alpha-sort
+LTO Var(flag_lto_alpha_sort)
+Sort the symbols alphabetically.
+
+size-sort
+LTO Var(flag_lto_size_sort)
+Sort the symbols according to size.
+
+reverse-sort
+LTO Var(flag_lto_reverse_sort)
+Display the symbols in reverse order.
+
+no-sort
+LTO Var(flag_lto_no_sort)
+Display the symbols in order of occurence.
+
 fresolution=
 LTO Joined
 The resolution file.
