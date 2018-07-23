@@ -102,6 +102,9 @@ no-sort
 LTO Var(flag_lto_no_sort)
 Display the symbols in order of occurence.
 
+symbol=
+LTO Driver RejectNegative Joined Var(flag_lto_dump_symbol)
+
 fresolution=
 LTO Joined
 The resolution file.

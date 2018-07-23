@@ -222,6 +222,18 @@ void dump_list (void)
   dump_list_variables ();
 }
 
+/* Dump specific variables and functions used in IL.  */
+void
+dump_symbol ()
+{
+  symtab_node *node;
+  fprintf (stderr, "Symbol:\t%s\n", flag_lto_dump_symbol);
+  FOR_EACH_SYMBOL (node)
+    if (!strcmp (flag_lto_dump_symbol, node->name ()))
+      node->debug ();
+  fprintf (stderr, "\n");
+}
+
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
 static int lto_parallelism;
 
@@ -3566,6 +3578,10 @@ lto_main (void)
 
   if (flag_lto_dump_list)
     dump_list ();
+
+  /* Dump specific variables and functions used in IL.  */
+  if (flag_lto_dump_symbol)
+    dump_symbol ();
 
   timevar_stop (TV_PHASE_STREAM_IN);
 
