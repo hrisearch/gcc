@@ -105,6 +105,10 @@ Display the symbols in order of occurence.
 symbol=
 LTO Driver RejectNegative Joined Var(flag_lto_dump_symbol)
 
+objects
+LTO Var(flag_lto_dump_objects)
+Dump the details of LTO objects.
+
 fresolution=
 LTO Joined
 The resolution file.
