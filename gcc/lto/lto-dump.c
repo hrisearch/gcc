@@ -1946,6 +1946,10 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
   /* We do not uniquify the pre-loaded cache entries, those are middle-end
      internal types that should not be merged.  */
 
+  typedef int_hash<unsigned, 0, UINT_MAX> code_id_hash;
+  hash_map <code_id_hash, unsigned> hm;
+  unsigned total = 0;
+
   /* Read the global declarations and types.  */
   while (ib_main.p < ib_main.len)
     {
@@ -1994,6 +1998,15 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 		 chains.  */
 	      if (TYPE_P (t))
 		{
+		  /* Map the tree types to their frequencies.  */
+		  if (flag_lto_dump_type_stats)
+		  {
+		    unsigned key = (unsigned) TREE_CODE (t);
+		    unsigned *countp = hm.get (key);
+		    hm.put (key, countp ? (*countp) + 1 : 1);
+		    total++;
+		  }
+
 		  seen_type = true;
 		  num_prevailing_types++;
 		  lto_fixup_prevailing_type (t);
@@ -2039,6 +2052,21 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	  gcc_assert (t && data_in->reader_cache->nodes.length () == from);
 	}
     }
+
+    if (flag_lto_dump_type_stats)
+    {
+      fprintf (stderr, "%s\n\nType\tFrequency\tPercentage\n");
+      for (hash_map<code_id_hash, unsigned>::iterator itr = hm.begin ();
+	   itr != hm.end ();
+	   ++itr)
+      {
+	std::pair<unsigned, unsigned> p = *itr;
+	enum tree_code code = (enum tree_code) p.first;
+	fprintf (stderr, "%s\t%d\t%0.2f%\n", get_tree_code_name (code),
+		 p.second, float (p.second)/total*100);
+      }
+    }
+
   data_in->location_cache.apply_location_cache ();
 
   /* Read in lto_in_decl_state objects.  */
