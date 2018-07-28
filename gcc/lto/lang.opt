@@ -113,6 +113,14 @@ type-stats
 LTO Var(flag_lto_dump_type_stats)
 Dump the statistics of tree types.
 
+tree-stats
+LTO Var(flag_lto_tree_stats)
+Dump the statistics of trees.
+
+gimple-stats
+LTO Var(flag_lto_gimple_stats)
+Dump the statistics of gimple statements.
+
 fresolution=
 LTO Joined
 The resolution file.

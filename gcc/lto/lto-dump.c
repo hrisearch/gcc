@@ -3622,6 +3622,22 @@ lto_main (void)
   if (flag_lto_dump_symbol)
     dump_symbol ();
 
+  /* Dump gimple statement statistics.  */
+  if (flag_lto_gimple_stats)
+  {
+    cgraph_node *node;
+    FOR_EACH_DEFINED_FUNCTION (node)
+    node->get_untransformed_body ();
+    dump_gimple_statistics ();
+  }
+
+  /* Dump tree statistics.  */
+  if (flag_lto_tree_stats)
+  {
+    fprintf (stderr, "Tree Statistics\n");
+    dump_tree_statistics ();
+  }
+
   timevar_stop (TV_PHASE_STREAM_IN);
 
   if (!seen_error ())
