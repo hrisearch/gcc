@@ -25,7 +25,7 @@ LTO_DUMP_EXE = lto-dump$(exeext)
 # The LTO-specific object files inclued in $(LTO_EXE).
 LTO_OBJS = lto/lto-lang.o lto/lto.o lto/lto-object.o attribs.o lto/lto-partition.o lto/lto-symtab.o
 lto_OBJS = $(LTO_OBJS)
-LTO_DUMP_OBJS = lto/lto-lang.o lto/lto-object.o attribs.o lto/lto-partition.o lto/lto-symtab.o lto/lto-dump.o
+LTO_DUMP_OBJS = lto/lto-lang.o lto/lto-object.o attribs.o lto/lto-partition.o lto/lto-symtab.o lto/lto-dump.o lto/lto-common.o
 lto_dump_OBJS = $(LTO_DUMP_OBJS)
 
 # this is only useful in a LTO bootstrap, but this does not work right
