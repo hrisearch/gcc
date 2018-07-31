@@ -121,6 +121,12 @@ gimple-stats
 LTO Var(flag_lto_gimple_stats)
 Dump the statistics of gimple statements.
 
+fdump-level=
+LTO Driver RejectNegative Joined Var(flag_dump_level)
+
+fdump-body=
+LTO Driver RejectNegative Joined Var(flag_dump_body)
+
 fresolution=
 LTO Joined
 The resolution file.

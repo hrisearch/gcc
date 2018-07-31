@@ -29,6 +29,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "gimple.h"
 #include "cfg.h"
 #include "cfghooks.h"
+#include "tree-cfg.h"
 #include "alloc-pool.h"
 #include "tree-pass.h"
 #include "tree-streamer.h"
@@ -232,6 +233,28 @@ dump_symbol ()
     if (!strcmp (flag_lto_dump_symbol, node->name ()))
       node->debug ();
   fprintf (stderr, "\n");
+}
+
+/* Dump specific gimple body of specified function.  */
+void
+dump_body ()
+{
+  dump_flags_t flags;
+
+  char buf[100];
+  sprintf (buf, "-level=%s", flag_dump_level);
+  flags = parse_dump_option (buf);
+
+  cgraph_node *cnode;
+  FOR_EACH_FUNCTION (cnode)
+  {
+    if (cnode->definition && !strcmp (cnode->name (), flag_dump_body))
+    {
+      fprintf (stderr, "Gimple body of function: %s\n", cnode->name ());
+      cnode->get_untransformed_body ();
+      debug_function (cnode->decl, flags);
+    }
+  }
 }
 
 /* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
@@ -3637,6 +3660,10 @@ lto_main (void)
     fprintf (stderr, "Tree Statistics\n");
     dump_tree_statistics ();
   }
+
+  /* Dump specific gimple body of specified function.  */
+  if (flag_dump_level && flag_dump_body)
+    dump_body ();
 
   timevar_stop (TV_PHASE_STREAM_IN);
 

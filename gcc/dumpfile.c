@@ -123,6 +123,7 @@ static struct dump_file_info dump_files[TDI_end] =
    in dumpfile.h and opt_info_options below. */
 static const kv_pair<dump_flags_t> dump_options[] =
 {
+  {"none", TDF_NONE},
   {"address", TDF_ADDRESS},
   {"asmname", TDF_ASMNAME},
   {"slim", TDF_SLIM},
@@ -1296,6 +1297,33 @@ opt_info_enable_passes (optgroup_flags_t optgroup_flags, dump_flags_t flags,
     }
 
   return n;
+}
+
+dump_flags_t
+parse_dump_option (const char *option_value)
+{
+  dump_flags_t flags = TDF_NONE;
+  const char *ptr = option_value;
+
+  const struct kv_pair<dump_flags_t> *option_ptr;
+  const char *eq_ptr;
+  unsigned length;
+
+  eq_ptr = strchr (ptr, '=');
+
+  length = strlen (eq_ptr) -1;
+  ptr = eq_ptr;
+  ptr++;
+
+  for (option_ptr = dump_options; option_ptr->name; option_ptr++)
+    if (strlen (option_ptr->name) == length
+	&& !memcmp (option_ptr->name, ptr, length))
+    {
+      flags |= option_ptr->value;
+      break;
+    }
+
+  return flags;
 }
 
 /* Parse ARG as a dump switch. Return nonzero if it is, and store the
