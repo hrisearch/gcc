@@ -1771,6 +1771,8 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
   /* We do not uniquify the pre-loaded cache entries, those are middle-end
      internal types that should not be merged.  */
 
+  /* hash_map for dumping type statistics.  */
+
   typedef int_hash<unsigned, 0, UINT_MAX> code_id_hash;
   hash_map <code_id_hash, unsigned> hm;
   unsigned total = 0;
@@ -1878,18 +1880,21 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	}
     }
 
+    /* Dumping type statistics.  */
+
     if (flag_lto_dump_type_stats)
     {
-      fprintf (stderr, "\n\nType\tFrequency\tPercentage\n");
+      fprintf (stdout, "\n\n     Type     Frequency   Percentage\n\n");
       for (hash_map<code_id_hash, unsigned>::iterator itr = hm.begin ();
 	   itr != hm.end ();
 	   ++itr)
       {
 	std::pair<unsigned, unsigned> p = *itr;
 	enum tree_code code = (enum tree_code) p.first;
-	fprintf (stderr, "%s\t%d\t%0.2f%\n", get_tree_code_name (code),
+	fprintf (stdout, "%14s %6d %10.2f%\n", get_tree_code_name (code),
 		 p.second, float (p.second)/total*100);
       }
+      exit (0);
     }
 
   data_in->location_cache.apply_location_cache ();
@@ -2204,11 +2209,12 @@ lto_file_read (lto_file *file, FILE *resolution_file, int *count)
   if (flag_lto_dump_objects)
   {
     int i=0;
-    fprintf (stderr, "\n\t\t\tLTO object name: %s\n", file->filename);
-    fprintf (stderr, "\nNO.\t\tOFFSET\t\tSIZE\t\tSECTION NAME\n\n");
+    fprintf (stdout, "\n    LTO Object Name: %s\n", file->filename);
+    fprintf (stdout, "\nNo.    Offset    Size       Section Name\n\n");
     for (section = section_list.first; section != NULL; section = section->next)
-      fprintf (stderr, "%d\t\t%d\t\t%d\t\t%s\n",
+      fprintf (stdout, "%2d %8d %8d   %s\n",
 	      ++i, section->start, section->len, section->name);
+    exit (0);
   }
 
   /* Find all sub modules in the object and put their sections into new hash
@@ -3393,3 +3399,5 @@ offload_handle_link_vars (void)
       }
 #endif
 }
+
+#include "gt-lto-lto.h"

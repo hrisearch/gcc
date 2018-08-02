@@ -74,10 +74,6 @@ demangle
 LTO Var(flag_lto_dump_demangle)
 Dump the demangled output.
 
-no-demangle
-LTO Var(flag_lto_dump_no_demangle)
-Dump the non-demangled output.
-
 defined-only
 LTO Var(flag_lto_dump_defined)
 Dump only the defined symbols.
@@ -86,8 +82,8 @@ print-value
 LTO Var(flag_lto_print_value)
 Print the initial values of the variables.
 
-alpha-sort
-LTO Var(flag_lto_alpha_sort)
+name-sort
+LTO Var(flag_lto_name_sort)
 Sort the symbols alphabetically.
 
 size-sort
@@ -121,10 +117,10 @@ gimple-stats
 LTO Var(flag_lto_gimple_stats)
 Dump the statistics of gimple statements.
 
-fdump-level=
+dump-level=
 LTO Driver RejectNegative Joined Var(flag_dump_level)
 
-fdump-body=
+dump-body=
 LTO Driver RejectNegative Joined Var(flag_dump_body)
 
 fresolution=

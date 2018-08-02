@@ -142,5 +142,3 @@ lto_main (void)
   timevar_start (TV_PHASE_PARSING);
   timevar_push (TV_PARSE_GLOBAL);
 }
-
-#include "gt-lto-lto.h"

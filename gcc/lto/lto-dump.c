@@ -1,4 +1,4 @@
-/* Top-level LTO routines.
+/* Functions for LTO dump tool.
    Copyright (C) 2009-2018 Free Software Foundation, Inc.
 
 This file is part of GCC.
@@ -59,6 +59,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-pretty-print.h"
 #include "lto-common.h"
 
+/* Stores details of symbols for dumping symbol list.  */
+
 struct symbol_entry
 {
   symtab_node *node;
@@ -68,8 +70,6 @@ struct symbol_entry
   {
     if (flag_lto_dump_demangle)
       return xstrdup (node->name ());
-    else if (flag_lto_dump_no_demangle)
-      return xstrdup (node->asm_name ());
     else
       return xstrdup (node->asm_name ());
 
@@ -78,6 +78,8 @@ struct symbol_entry
   virtual size_t get_size () = 0;
   virtual void dump () = 0;
 };
+
+/* Stores variable specific details of symbols for dumping symbol list.  */
 
 struct variable_entry: public symbol_entry
 {
@@ -99,14 +101,15 @@ struct variable_entry: public symbol_entry
     varpool_node *vnode = (varpool_node*)node;
     vnode->get_constructor ();
     tree value_tree = DECL_INITIAL (vnode->decl);
-    fprintf (stderr,"%10s %10s %10s %10zu\t", name, type_name, visibility, sz);
+    fprintf (stdout,"%10s %10s %10s %10zu\t", name, type_name, visibility, sz);
     if (flag_lto_print_value && value_tree)
       debug_generic_expr (value_tree);
     else
-      fprintf (stderr, "\n");
+      fprintf (stdout, "\n");
   }
 };
 
+/* Stores function specific details of symbols for dumping symbol list.  */
 
 struct function_entry: public symbol_entry
 {
@@ -128,10 +131,11 @@ struct function_entry: public symbol_entry
     const char *type_name = node->dump_type_name ();
     const char *visibility = node->dump_visibility ();
     size_t sz = get_size ();
-    fprintf (stderr,"%10s %10s %10s %10zu\n", name, type_name, visibility, sz);
+    fprintf (stdout,"%10s %10s %10s %10zu\n", name, type_name, visibility, sz);
   }
 };
 
+/* Comparing symbols based on size.  */
 
 int size_compare (const void *a, const void *b)
 {
@@ -141,7 +145,9 @@ int size_compare (const void *a, const void *b)
   return e1->get_size () - e2->get_size ();
 }
 
-int alpha_compare (const void *a, const void *b)
+/* Comparing symbols based on name.  */
+
+int name_compare (const void *a, const void *b)
 {
   symbol_entry *e1 = *(symbol_entry **) a;
   symbol_entry *e2 = *(symbol_entry **) b;
@@ -149,6 +155,7 @@ int alpha_compare (const void *a, const void *b)
   return strcmp (e1->get_name (), e2->get_name ());
 }
 
+/* Dump list of functions and their details.  */
 
 void dump_list_functions (void)
 {
@@ -168,16 +175,16 @@ void dump_list_functions (void)
   {
     if (flag_lto_size_sort)
       v.qsort (size_compare);
-    else if (flag_lto_alpha_sort)
-      v.qsort (alpha_compare);
+    else if (flag_lto_name_sort)
+      v.qsort (name_compare);
   }
   if (flag_lto_reverse_sort)
     v.reverse ();
 
-  fprintf (stderr, "\n\tName\tType\tVisibility\tSize");
+  fprintf (stdout, "\n     Name     Type     Visibility      Size");
   if (flag_lto_print_value)
-    fprintf (stderr, "\tValue");
-  fprintf (stderr, "\n\n");
+    fprintf (stdout, "    Value");
+  fprintf (stdout, "\n\n");
 
   int i=0;
   symbol_entry* e;
@@ -185,6 +192,7 @@ void dump_list_functions (void)
     e->dump ();
 }
 
+/* Dump list of variables and their details.  */
 
 void dump_list_variables (void)
 {
@@ -202,25 +210,28 @@ void dump_list_variables (void)
   {
     if (flag_lto_size_sort)
       v.qsort (size_compare);
-    else if (flag_lto_alpha_sort)
-      v.qsort (alpha_compare);
+    else if (flag_lto_name_sort)
+      v.qsort (name_compare);
   }
 
 
   if (flag_lto_reverse_sort)
     v.reverse ();
 
-  fprintf (stderr, "\n");
+  fprintf (stdout, "\n");
   int i=0;
   symbol_entry* e;
   FOR_EACH_VEC_ELT (v, i, e)
     e->dump ();
 }
 
+/* Dump symbol list.  */
+
 void dump_list (void)
 {
   dump_list_functions ();
   dump_list_variables ();
+  exit (0);
 }
 
 /* Dump specific variables and functions used in IL.  */
@@ -228,33 +239,36 @@ void
 dump_symbol ()
 {
   symtab_node *node;
-  fprintf (stderr, "Symbol:\t%s\n", flag_lto_dump_symbol);
+  fprintf (stdout, "Symbol: %s\n", flag_lto_dump_symbol);
   FOR_EACH_SYMBOL (node)
     if (!strcmp (flag_lto_dump_symbol, node->name ()))
       node->debug ();
-  fprintf (stderr, "\n");
+  fprintf (stdout, "\n");
+  exit (0);
 }
 
 /* Dump specific gimple body of specified function.  */
 void
 dump_body ()
 {
-  dump_flags_t flags;
-
-  char buf[100];
-  sprintf (buf, "-level=%s", flag_dump_level);
-  flags = parse_dump_option (buf);
-
+  dump_flags_t flags = TDF_NONE;
+  if (flag_dump_level)
+  {
+    char buf[100];
+    sprintf (buf, "-level=%s", flag_dump_level);
+    flags = parse_dump_option (buf);
+  }
   cgraph_node *cnode;
   FOR_EACH_FUNCTION (cnode)
   {
     if (cnode->definition && !strcmp (cnode->name (), flag_dump_body))
     {
-      fprintf (stderr, "Gimple body of function: %s\n", cnode->name ());
+      fprintf (stdout, "Gimple Body of Function: %s\n", cnode->name ());
       cnode->get_untransformed_body ();
       debug_function (cnode->decl, flags);
     }
   }
+    exit (0);
 }
 
 /* Main entry point for the GIMPLE front end.  This front end has
@@ -300,6 +314,7 @@ lto_main (void)
      command line.  */
   read_cgraph_and_symbols (num_in_fnames, in_fnames);
 
+  /* Dump symbol list.  */
   if (flag_lto_dump_list)
     dump_list ();
 
@@ -314,17 +329,19 @@ lto_main (void)
     FOR_EACH_DEFINED_FUNCTION (node)
     node->get_untransformed_body ();
     dump_gimple_statistics ();
+    exit (0);
   }
 
   /* Dump tree statistics.  */
   if (flag_lto_tree_stats)
   {
-    fprintf (stderr, "Tree Statistics\n");
+    fprintf (stdout, "Tree Statistics\n");
     dump_tree_statistics ();
+    exit (0);
   }
 
   /* Dump specific gimple body of specified function.  */
-  if (flag_dump_level && flag_dump_body)
+  if (flag_dump_body)
     dump_body ();
 
   timevar_stop (TV_PHASE_STREAM_IN);
@@ -369,5 +386,3 @@ lto_main (void)
   timevar_start (TV_PHASE_PARSING);
   timevar_push (TV_PARSE_GLOBAL);
 }
-
-#include "gt-lto-lto.h"
