@@ -1299,29 +1299,59 @@ opt_info_enable_passes (optgroup_flags_t optgroup_flags, dump_flags_t flags,
   return n;
 }
 
+/* Helper routine for parsing dump flags and return corresponding
+   value.  */
+
 dump_flags_t
-parse_dump_option (const char *option_value)
+parse_dump_option (const char *option_value, const char **pos_p,
+       const char *swtch)
 {
   dump_flags_t flags = TDF_NONE;
   const char *ptr = option_value;
 
-  const struct kv_pair<dump_flags_t> *option_ptr;
-  const char *eq_ptr;
-  unsigned length;
+  while (*ptr)
+    {
+      const struct kv_pair<dump_flags_t> *option_ptr;
+      const char *end_ptr;
+      const char *eq_ptr;
+      unsigned length;
 
-  eq_ptr = strchr (ptr, '=');
+      if (pos_p)
+  *pos_p = NULL;
 
-  length = strlen (eq_ptr) -1;
-  ptr = eq_ptr;
+      while (*ptr == '-')
   ptr++;
 
-  for (option_ptr = dump_options; option_ptr->name; option_ptr++)
-    if (strlen (option_ptr->name) == length
-	&& !memcmp (option_ptr->name, ptr, length))
-    {
-      flags |= option_ptr->value;
-      break;
-    }
+      end_ptr = strchr (ptr, '-');
+      eq_ptr = strchr (ptr, '=');
+
+      if (eq_ptr && !end_ptr)
+        end_ptr = eq_ptr;
+
+      if (!end_ptr)
+  end_ptr = ptr + strlen (ptr);
+      length = end_ptr - ptr;
+
+      for (option_ptr = dump_options; option_ptr->name; option_ptr++)
+  if (strlen (option_ptr->name) == length
+      && !memcmp (option_ptr->name, ptr, length))
+          {
+            flags |= option_ptr->value;
+      goto found;
+          }
+
+      if (*ptr == '=')
+        {
+	  if (pos_p)
+      *pos_p = ptr + 1;
+          break;
+        }
+      else if (swtch)
+        warning (0, "ignoring unknown option %q.*s in %<-fdump-%s%>",
+		 length, ptr, swtch);
+    found:
+      ptr = end_ptr;
+  }
 
   return flags;
 }
@@ -1334,8 +1364,7 @@ gcc::dump_manager::
 dump_switch_p_1 (const char *arg, struct dump_file_info *dfi, bool doglob)
 {
   const char *option_value;
-  const char *ptr;
-  dump_flags_t flags;
+  dump_flags_t flags = TDF_NONE;
 
   if (doglob && !dfi->glob)
     return 0;
@@ -1347,50 +1376,13 @@ dump_switch_p_1 (const char *arg, struct dump_file_info *dfi, bool doglob)
   if (*option_value && *option_value != '-' && *option_value != '=')
     return 0;
 
-  ptr = option_value;
-  flags = TDF_NONE;
-
-  while (*ptr)
+  const char *filename;
+  flags = parse_dump_option (option_value, &filename, dfi->swtch);
+  if (filename)
     {
-      const struct kv_pair<dump_flags_t> *option_ptr;
-      const char *end_ptr;
-      const char *eq_ptr;
-      unsigned length;
-
-      while (*ptr == '-')
-	ptr++;
-      end_ptr = strchr (ptr, '-');
-      eq_ptr = strchr (ptr, '=');
-
-      if (eq_ptr && !end_ptr)
-        end_ptr = eq_ptr;
-
-      if (!end_ptr)
-	end_ptr = ptr + strlen (ptr);
-      length = end_ptr - ptr;
-
-      for (option_ptr = dump_options; option_ptr->name; option_ptr++)
-	if (strlen (option_ptr->name) == length
-	    && !memcmp (option_ptr->name, ptr, length))
-          {
-            flags |= option_ptr->value;
-	    goto found;
-          }
-
-      if (*ptr == '=')
-        {
-          /* Interpret rest of the argument as a dump filename.  This
-             filename overrides other command line filenames.  */
-          if (dfi->pfilename)
-            free (CONST_CAST (char *, dfi->pfilename));
-          dfi->pfilename = xstrdup (ptr + 1);
-          break;
-        }
-      else
-        warning (0, "ignoring unknown option %q.*s in %<-fdump-%s%>",
-                 length, ptr, dfi->swtch);
-    found:;
-      ptr = end_ptr;
+      if (dfi->pfilename)
+  free (CONST_CAST (char *, dfi->pfilename));
+      dfi->pfilename = xstrdup (filename);
     }
 
   dfi->pstate = -1;

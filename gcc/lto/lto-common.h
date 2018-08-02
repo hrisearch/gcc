@@ -1,5 +1,5 @@
-/* LTO common.
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+/* LTO common functions between lto.c and lto-dump.c header file.
+   Copyright (C) 2018 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -22,9 +22,6 @@ along with GCC; see the file COPYING3.  If not see
 
 void lto_init (void);
 void read_cgraph_and_symbols (unsigned, const char **);
-void offload_handle_link_vars (void);
-void do_whole_program_analysis (void);
-void materialize_cgraph (void);
 void print_lto_report_1 (void);
 
 extern int real_file_count;

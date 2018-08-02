@@ -123,6 +123,10 @@ LTO Driver RejectNegative Joined Var(flag_dump_level)
 dump-body=
 LTO Driver RejectNegative Joined Var(flag_dump_body)
 
+help
+LTO Var(flag_lto_dump_tool_help)
+Dump the dump tool command line options.
+
 fresolution=
 LTO Joined
 The resolution file.

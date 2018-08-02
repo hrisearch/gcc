@@ -9113,22 +9113,20 @@ dump_tree_statistics (void)
       mem_usage::print_dash_line (TREE_MEM_USAGE_SPACES);
       fprintf (stderr, "%-20s %7" PRIu64 " %10" PRIu64 "\n", "Total",
 	       total_nodes, total_bytes);
-      if (!flag_lto_tree_stats)
-      {
 	mem_usage::print_dash_line (TREE_MEM_USAGE_SPACES);
 	fprintf (stderr, "Code                   Nodes\n");
 	mem_usage::print_dash_line (TREE_MEM_USAGE_SPACES);
 	for (i = 0; i < (int) MAX_TREE_CODES; i++)
-	  fprintf (stderr, "%-32s %7" PRIu64 "\n",
-		   get_tree_code_name ((enum tree_code) i),
-		   tree_code_counts[i]);
+    if (tree_code_counts[i])
+	    fprintf (stderr, "%-32s %7" PRIu64 "\n",
+		     get_tree_code_name ((enum tree_code) i),
+		     tree_code_counts[i]);
 	mem_usage::print_dash_line (TREE_MEM_USAGE_SPACES);
 	fprintf (stderr, "\n");
 	ssanames_print_statistics ();
 	fprintf (stderr, "\n");
 	phinodes_print_statistics ();
 	fprintf (stderr, "\n");
-      }
     }
   else
     fprintf (stderr, "(No per-node statistics)\n");

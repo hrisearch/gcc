@@ -57,6 +57,486 @@ along with GCC; see the file COPYING3.  If not see
 #include "builtins.h"
 #include "lto-common.h"
 
+
+/* Number of parallel tasks to run, -1 if we want to use GNU Make jobserver.  */
+static int lto_parallelism;
+
+/* Return true when NODE has a clone that is analyzed (i.e. we need
+   to load its body even if the node itself is not needed).  */
+
+static bool
+has_analyzed_clone_p (struct cgraph_node *node)
+{
+  struct cgraph_node *orig = node;
+  node = node->clones;
+  if (node)
+    while (node != orig)
+      {
+  if (node->analyzed)
+    return true;
+  if (node->clones)
+    node = node->clones;
+  else if (node->next_sibling_clone)
+    node = node->next_sibling_clone;
+  else
+    {
+      while (node != orig && !node->next_sibling_clone)
+        node = node->clone_of;
+      if (node != orig)
+        node = node->next_sibling_clone;
+    }
+      }
+  return false;
+}
+
+/* Read the function body for the function associated with NODE.  */
+
+static void
+lto_materialize_function (struct cgraph_node *node)
+{
+  tree decl;
+
+  decl = node->decl;
+  /* Read in functions with body (analyzed nodes)
+     and also functions that are needed to produce virtual clones.  */
+  if ((node->has_gimple_body_p () && node->analyzed)
+      || node->used_as_abstract_origin
+      || has_analyzed_clone_p (node))
+    {
+      /* Clones don't need to be read.  */
+      if (node->clone_of)
+  return;
+      if (DECL_FUNCTION_PERSONALITY (decl) && !first_personality_decl)
+  first_personality_decl = DECL_FUNCTION_PERSONALITY (decl);
+    }
+
+  /* Let the middle end know about the function.  */
+  rest_of_decl_compilation (decl, 1, 0);
+}
+
+/* Materialize all the bodies for all the nodes in the callgraph.  */
+
+static void
+materialize_cgraph (void)
+{
+  struct cgraph_node *node;
+  timevar_id_t lto_timer;
+
+  if (!quiet_flag)
+    fprintf (stderr,
+       flag_wpa ? "Materializing decls:" : "Reading function bodies:");
+
+
+  FOR_EACH_FUNCTION (node)
+    {
+      if (node->lto_file_data)
+  {
+    lto_materialize_function (node);
+    lto_stats.num_input_cgraph_nodes++;
+  }
+    }
+
+
+  /* Start the appropriate timer depending on the mode that we are
+     operating in.  */
+  lto_timer = (flag_wpa) ? TV_WHOPR_WPA
+        : (flag_ltrans) ? TV_WHOPR_LTRANS
+        : TV_LTO;
+  timevar_push (lto_timer);
+
+  current_function_decl = NULL;
+  set_cfun (NULL);
+
+  if (!quiet_flag)
+    fprintf (stderr, "\n");
+
+  timevar_pop (lto_timer);
+}
+
+/* Create artificial pointers for "omp declare target link" vars.  */
+
+static void
+offload_handle_link_vars (void)
+{
+#ifdef ACCEL_COMPILER
+  varpool_node *var;
+  FOR_EACH_VARIABLE (var)
+    if (lookup_attribute ("omp declare target link",
+        DECL_ATTRIBUTES (var->decl)))
+      {
+  tree type = build_pointer_type (TREE_TYPE (var->decl));
+  tree link_ptr_var = make_node (VAR_DECL);
+  TREE_TYPE (link_ptr_var) = type;
+  TREE_USED (link_ptr_var) = 1;
+  TREE_STATIC (link_ptr_var) = 1;
+  SET_DECL_MODE (link_ptr_var, TYPE_MODE (type));
+  DECL_SIZE (link_ptr_var) = TYPE_SIZE (type);
+  DECL_SIZE_UNIT (link_ptr_var) = TYPE_SIZE_UNIT (type);
+  DECL_ARTIFICIAL (link_ptr_var) = 1;
+  tree var_name = DECL_ASSEMBLER_NAME (var->decl);
+  char *new_name
+    = ACONCAT ((IDENTIFIER_POINTER (var_name), "_linkptr", NULL));
+  DECL_NAME (link_ptr_var) = get_identifier (new_name);
+  SET_DECL_ASSEMBLER_NAME (link_ptr_var, DECL_NAME (link_ptr_var));
+  SET_DECL_VALUE_EXPR (var->decl, build_simple_mem_ref (link_ptr_var));
+  DECL_HAS_VALUE_EXPR_P (var->decl) = 1;
+      }
+#endif
+}
+
+/* Wait for forked process and signal errors.  */
+#ifdef HAVE_WORKING_FORK
+static void
+wait_for_child ()
+{
+  int status;
+  do
+    {
+#ifndef WCONTINUED
+#define WCONTINUED 0
+#endif
+      int w = waitpid (0, &status, WUNTRACED | WCONTINUED);
+      if (w == -1)
+  fatal_error (input_location, "waitpid failed");
+
+      if (WIFEXITED (status) && WEXITSTATUS (status))
+  fatal_error (input_location, "streaming subprocess failed");
+      else if (WIFSIGNALED (status))
+  fatal_error (input_location,
+         "streaming subprocess was killed by signal");
+    }
+  while (!WIFEXITED (status) && !WIFSIGNALED (status));
+}
+#endif
+
+/* Actually stream out ENCODER into TEMP_FILENAME.  */
+
+static void
+do_stream_out (char *temp_filename, lto_symtab_encoder_t encoder, int part)
+{
+  lto_file *file = lto_obj_file_open (temp_filename, true);
+  if (!file)
+    fatal_error (input_location, "lto_obj_file_open() failed");
+  lto_set_current_out_file (file);
+
+  gcc_assert (!dump_file);
+  streamer_dump_file = dump_begin (TDI_lto_stream_out, NULL, part);
+  ipa_write_optimization_summaries (encoder);
+
+  free (CONST_CAST (char *, file->filename));
+
+  lto_set_current_out_file (NULL);
+  lto_obj_file_close (file);
+  free (file);
+  if (streamer_dump_file)
+    {
+      dump_end (TDI_lto_stream_out, streamer_dump_file);
+      streamer_dump_file = NULL;
+    }
+}
+
+/* Stream out ENCODER into TEMP_FILENAME
+   Fork if that seems to help.  */
+
+static void
+stream_out (char *temp_filename, lto_symtab_encoder_t encoder,
+      bool ARG_UNUSED (last), int part)
+{
+#ifdef HAVE_WORKING_FORK
+  static int nruns;
+
+  if (lto_parallelism <= 1)
+    {
+      do_stream_out (temp_filename, encoder, part);
+      return;
+    }
+
+  /* Do not run more than LTO_PARALLELISM streamings
+     FIXME: we ignore limits on jobserver.  */
+  if (lto_parallelism > 0 && nruns >= lto_parallelism)
+    {
+      wait_for_child ();
+      nruns --;
+    }
+  /* If this is not the last parallel partition, execute new
+     streaming process.  */
+  if (!last)
+    {
+      pid_t cpid = fork ();
+
+      if (!cpid)
+  {
+    setproctitle ("lto1-wpa-streaming");
+    do_stream_out (temp_filename, encoder, part);
+    exit (0);
+  }
+      /* Fork failed; lets do the job ourseleves.  */
+      else if (cpid == -1)
+  do_stream_out (temp_filename, encoder, part);
+      else
+  nruns++;
+    }
+  /* Last partition; stream it and wait for all children to die.  */
+  else
+    {
+      int i;
+      do_stream_out (temp_filename, encoder, part);
+      for (i = 0; i < nruns; i++)
+  wait_for_child ();
+    }
+  asm_nodes_output = true;
+#else
+  do_stream_out (temp_filename, encoder, part);
+#endif
+}
+
+
+/* Write all output files in WPA mode and the file with the list of
+   LTRANS units.  */
+
+static void
+lto_wpa_write_files (void)
+{
+  unsigned i, n_sets;
+  ltrans_partition part;
+  FILE *ltrans_output_list_stream;
+  char *temp_filename;
+  auto_vec <char *>temp_filenames;
+  auto_vec <int>temp_priority;
+  size_t blen;
+
+  /* Open the LTRANS output list.  */
+  if (!ltrans_output_list)
+    fatal_error (input_location, "no LTRANS output list filename provided");
+
+  timevar_push (TV_WHOPR_WPA);
+
+  FOR_EACH_VEC_ELT (ltrans_partitions, i, part)
+    lto_stats.num_output_symtab_nodes += lto_symtab_encoder_size (part->encoder);
+
+  timevar_pop (TV_WHOPR_WPA);
+
+  timevar_push (TV_WHOPR_WPA_IO);
+
+  /* Generate a prefix for the LTRANS unit files.  */
+  blen = strlen (ltrans_output_list);
+  temp_filename = (char *) xmalloc (blen + sizeof ("2147483648.o"));
+  strcpy (temp_filename, ltrans_output_list);
+  if (blen > sizeof (".out")
+      && strcmp (temp_filename + blen - sizeof (".out") + 1,
+     ".out") == 0)
+    temp_filename[blen - sizeof (".out") + 1] = '\0';
+  blen = strlen (temp_filename);
+
+  n_sets = ltrans_partitions.length ();
+
+  for (i = 0; i < n_sets; i++)
+    {
+      ltrans_partition part = ltrans_partitions[i];
+
+      /* Write all the nodes in SET.  */
+      sprintf (temp_filename + blen, "%u.o", i);
+
+      if (!quiet_flag)
+  fprintf (stderr, " %s (%s %i insns)", temp_filename, part->name, part->insns);
+      if (symtab->dump_file)
+  {
+    lto_symtab_encoder_iterator lsei;
+
+    fprintf (symtab->dump_file, "Writing partition %s to file %s, %i insns\n",
+       part->name, temp_filename, part->insns);
+    fprintf (symtab->dump_file, "  Symbols in partition: ");
+    for (lsei = lsei_start_in_partition (part->encoder); !lsei_end_p (lsei);
+         lsei_next_in_partition (&lsei))
+      {
+        symtab_node *node = lsei_node (lsei);
+        fprintf (symtab->dump_file, "%s ", node->asm_name ());
+      }
+    fprintf (symtab->dump_file, "\n  Symbols in boundary: ");
+    for (lsei = lsei_start (part->encoder); !lsei_end_p (lsei);
+         lsei_next (&lsei))
+      {
+        symtab_node *node = lsei_node (lsei);
+        if (!lto_symtab_encoder_in_partition_p (part->encoder, node))
+    {
+      fprintf (symtab->dump_file, "%s ", node->asm_name ());
+      cgraph_node *cnode = dyn_cast <cgraph_node *> (node);
+      if (cnode
+          && lto_symtab_encoder_encode_body_p (part->encoder, cnode))
+        fprintf (symtab->dump_file, "(body included)");
+      else
+        {
+          varpool_node *vnode = dyn_cast <varpool_node *> (node);
+          if (vnode
+        && lto_symtab_encoder_encode_initializer_p (part->encoder, vnode))
+      fprintf (symtab->dump_file, "(initializer included)");
+        }
+    }
+      }
+    fprintf (symtab->dump_file, "\n");
+  }
+      gcc_checking_assert (lto_symtab_encoder_size (part->encoder) || !i);
+
+      stream_out (temp_filename, part->encoder, i == n_sets - 1, i);
+
+      part->encoder = NULL;
+
+      temp_priority.safe_push (part->insns);
+      temp_filenames.safe_push (xstrdup (temp_filename));
+    }
+  ltrans_output_list_stream = fopen (ltrans_output_list, "w");
+  if (ltrans_output_list_stream == NULL)
+    fatal_error (input_location,
+     "opening LTRANS output list %s: %m", ltrans_output_list);
+  for (i = 0; i < n_sets; i++)
+    {
+      unsigned int len = strlen (temp_filenames[i]);
+      if (fprintf (ltrans_output_list_stream, "%i\n", temp_priority[i]) < 0
+    || fwrite (temp_filenames[i], 1, len, ltrans_output_list_stream) < len
+    || fwrite ("\n", 1, 1, ltrans_output_list_stream) < 1)
+  fatal_error (input_location, "writing to LTRANS output list %s: %m",
+         ltrans_output_list);
+     free (temp_filenames[i]);
+    }
+
+  lto_stats.num_output_files += n_sets;
+
+  /* Close the LTRANS output list.  */
+  if (fclose (ltrans_output_list_stream))
+    fatal_error (input_location,
+     "closing LTRANS output list %s: %m", ltrans_output_list);
+
+  free_ltrans_partitions ();
+  free (temp_filename);
+
+  timevar_pop (TV_WHOPR_WPA_IO);
+}
+
+/* Perform whole program analysis (WPA) on the callgraph and write out the
+   optimization plan.  */
+
+static void
+do_whole_program_analysis (void)
+{
+  symtab_node *node;
+
+  lto_parallelism = 1;
+
+  /* TODO: jobserver communicatoin is not supported, yet.  */
+  if (!strcmp (flag_wpa, "jobserver"))
+    lto_parallelism = -1;
+  else
+    {
+      lto_parallelism = atoi (flag_wpa);
+      if (lto_parallelism <= 0)
+  lto_parallelism = 0;
+    }
+
+  timevar_start (TV_PHASE_OPT_GEN);
+
+  /* Note that since we are in WPA mode, materialize_cgraph will not
+     actually read in all the function bodies.  It only materializes
+     the decls and cgraph nodes so that analysis can be performed.  */
+  materialize_cgraph ();
+
+  /* Reading in the cgraph uses different timers, start timing WPA now.  */
+  timevar_push (TV_WHOPR_WPA);
+
+  if (pre_ipa_mem_report)
+    {
+      fprintf (stderr, "Memory consumption before IPA\n");
+      dump_memory_report (false);
+    }
+
+  symtab->function_flags_ready = true;
+
+  if (symtab->dump_file)
+    symtab->dump (symtab->dump_file);
+  bitmap_obstack_initialize (NULL);
+  symtab->state = IPA_SSA;
+
+  execute_ipa_pass_list (g->get_passes ()->all_regular_ipa_passes);
+
+  /* When WPA analysis raises errors, do not bother to output anything.  */
+  if (seen_error ())
+    return;
+
+  /* We are about to launch the final LTRANS phase, stop the WPA timer.  */
+  timevar_pop (TV_WHOPR_WPA);
+
+  timevar_push (TV_WHOPR_PARTITIONING);
+
+  gcc_assert (!dump_file);
+  dump_file = dump_begin (partition_dump_id, NULL);
+
+  if (dump_file)
+    symtab->dump (dump_file);
+
+  symtab_node::checking_verify_symtab_nodes ();
+  bitmap_obstack_release (NULL);
+  if (flag_lto_partition == LTO_PARTITION_1TO1)
+    lto_1_to_1_map ();
+  else if (flag_lto_partition == LTO_PARTITION_MAX)
+    lto_max_map ();
+  else if (flag_lto_partition == LTO_PARTITION_ONE)
+    lto_balanced_map (1, INT_MAX);
+  else if (flag_lto_partition == LTO_PARTITION_BALANCED)
+    lto_balanced_map (PARAM_VALUE (PARAM_LTO_PARTITIONS),
+          PARAM_VALUE (MAX_PARTITION_SIZE));
+  else
+    gcc_unreachable ();
+
+  /* Inline summaries are needed for balanced partitioning.  Free them now so
+     the memory can be used for streamer caches.  */
+  ipa_free_fn_summary ();
+
+  /* AUX pointers are used by partitioning code to bookkeep number of
+     partitions symbol is in.  This is no longer needed.  */
+  FOR_EACH_SYMBOL (node)
+    node->aux = NULL;
+
+  lto_stats.num_cgraph_partitions += ltrans_partitions.length ();
+
+  /* Find out statics that need to be promoted
+     to globals with hidden visibility because they are accessed from multiple
+     partitions.  */
+  lto_promote_cross_file_statics ();
+  if (dump_file)
+     dump_end (partition_dump_id, dump_file);
+  dump_file = NULL;
+  timevar_pop (TV_WHOPR_PARTITIONING);
+
+  timevar_stop (TV_PHASE_OPT_GEN);
+
+  /* Collect a last time - in lto_wpa_write_files we may end up forking
+     with the idea that this doesn't increase memory usage.  So we
+     absoultely do not want to collect after that.  */
+  ggc_collect ();
+
+  timevar_start (TV_PHASE_STREAM_OUT);
+  if (!quiet_flag)
+    {
+      fprintf (stderr, "\nStreaming out");
+      fflush (stderr);
+    }
+  lto_wpa_write_files ();
+  if (!quiet_flag)
+    fprintf (stderr, "\n");
+  timevar_stop (TV_PHASE_STREAM_OUT);
+
+  if (post_ipa_mem_report)
+    {
+      fprintf (stderr, "Memory consumption after IPA\n");
+      dump_memory_report (false);
+    }
+
+  /* Show the LTO report before launching LTRANS.  */
+  if (flag_lto_report || (flag_wpa && flag_lto_report_wpa))
+    print_lto_report_1 ();
+  if (mem_report_wpa)
+    dump_memory_report (true);
+}
+
 /* Main entry point for the GIMPLE front end.  This front end has
    three main personalities:
 
