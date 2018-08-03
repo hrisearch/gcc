@@ -266,15 +266,9 @@ void dump_tool_help ()
   exit (0);
 }
 
-/* Main entry point for the GIMPLE front end.  This front end has
-   three main personalities.
-
-   - LTO (-flto).  All the object files on the command line are
-     loaded in memory and processed as a single translation unit.
-     This is the traditional link-time optimization behavior.
-     After this first personality, lto object files are created.
-     The purpose of this dump tool is to analyze the LTO object
-     files.  */
+/* Functions for dumping various details in LTO dump tool are called
+   in lto_main(). The purpose of this dump tool is to analyze the LTO
+   object files.  */
 
 void
 lto_main (void)
