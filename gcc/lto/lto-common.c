@@ -1837,7 +1837,6 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 	fprintf (stdout, "%14s %6d %10.2f%\n", get_tree_code_name (code),
 		 p.second, float (p.second)/total*100);
       }
-      exit (0);
     }
 
   data_in->location_cache.apply_location_cache ();
@@ -2157,7 +2156,6 @@ lto_file_read (lto_file *file, FILE *resolution_file, int *count)
     for (section = section_list.first; section != NULL; section = section->next)
       fprintf (stdout, "%2d %8d %8d   %s\n",
 	      ++i, section->start, section->len, section->name);
-    exit (0);
   }
 
   /* Find all sub modules in the object and put their sections into new hash
@@ -2925,5 +2923,3 @@ lto_init (void)
   lto_mode_identity_table = table;
 #endif
 }
-
-#include "gt-lto-lto.h"

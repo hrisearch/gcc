@@ -43,6 +43,7 @@ struct symbol_entry
   symtab_node *node;
   symbol_entry (symtab_node *node_): node (node_)
   {}
+
   char* get_name ()
   {
     if (flag_lto_dump_demangle)
@@ -53,7 +54,15 @@ struct symbol_entry
   }
 
   virtual size_t get_size () = 0;
-  virtual void dump () = 0;
+
+  virtual void dump ()
+  {
+    const char *name = get_name ();
+    const char *type_name = node->dump_type_name ();
+    const char *visibility = node->dump_visibility ();
+    size_t sz = get_size ();
+    printf ("%s  %s  %0.4zu  %s  ", type_name, visibility, sz, name);
+  }
 };
 
 /* Stores variable specific details of symbols for dumping symbol list.  */
@@ -62,27 +71,24 @@ struct variable_entry: public symbol_entry
 {
   variable_entry (varpool_node *node_): symbol_entry (node_)
   {}
+
   virtual size_t get_size ()
   {
-    varpool_node *vnode = (varpool_node*)node;
+    varpool_node *vnode = dyn_cast<varpool_node *> (node);
     if (DECL_SIZE (vnode->decl) && tree_fits_shwi_p (DECL_SIZE (vnode->decl)))
       return tree_to_shwi (DECL_SIZE (vnode->decl));
     return 0;
   }
+
   virtual void dump ()
   {
-    const char *name = get_name ();
-    const char *type_name = node->dump_type_name ();
-    const char *visibility = node->dump_visibility ();
-    size_t sz = get_size ();
-    varpool_node *vnode = (varpool_node*)node;
+    symbol_entry :: dump ();
+    varpool_node *vnode = dyn_cast<varpool_node *> (node);
     vnode->get_constructor ();
     tree value_tree = DECL_INITIAL (vnode->decl);
-    fprintf (stdout,"%10s %10s %10s %10zu\t", name, type_name, visibility, sz);
     if (flag_lto_print_value && value_tree)
-      debug_generic_expr (value_tree);
-    else
-      fprintf (stdout, "\n");
+      print_generic_expr (stdout, value_tree, TDF_NONE);
+    printf ("\n");
   }
 };
 
@@ -93,6 +99,12 @@ struct function_entry: public symbol_entry
   function_entry (cgraph_node *node_): symbol_entry (node_)
   {}
 
+  virtual void dump ()
+  {
+    symbol_entry :: dump ();
+    printf ("\n");
+  }
+
   virtual size_t get_size ()
   {
     cgraph_node *cnode = dyn_cast<cgraph_node *> (node);
@@ -101,14 +113,6 @@ struct function_entry: public symbol_entry
     return (cnode->definition)
 	   ? n_basic_blocks_for_fn (DECL_STRUCT_FUNCTION (cnode->decl))
 	   : 0;
-  }
-  void dump ()
-  {
-    const char *name = get_name ();
-    const char *type_name = node->dump_type_name ();
-    const char *visibility = node->dump_visibility ();
-    size_t sz = get_size ();
-    fprintf (stdout,"%10s %10s %10s %10zu\n", name, type_name, visibility, sz);
   }
 };
 
@@ -158,11 +162,6 @@ void dump_list_functions (void)
   if (flag_lto_reverse_sort)
     v.reverse ();
 
-  fprintf (stdout, "\n     Name     Type     Visibility      Size");
-  if (flag_lto_print_value)
-    fprintf (stdout, "    Value");
-  fprintf (stdout, "\n\n");
-
   int i=0;
   symbol_entry* e;
   FOR_EACH_VEC_ELT (v, i, e)
@@ -195,7 +194,7 @@ void dump_list_variables (void)
   if (flag_lto_reverse_sort)
     v.reverse ();
 
-  fprintf (stdout, "\n");
+  printf ("\n");
   int i=0;
   symbol_entry* e;
   FOR_EACH_VEC_ELT (v, i, e)
@@ -208,19 +207,19 @@ void dump_list (void)
 {
   dump_list_functions ();
   dump_list_variables ();
-  exit (0);
+  return;
 }
 
 /* Dump specific variables and functions used in IL.  */
 void dump_symbol ()
 {
   symtab_node *node;
-  fprintf (stdout, "Symbol: %s\n", flag_lto_dump_symbol);
+  printf ("Symbol: %s\n", flag_lto_dump_symbol);
   FOR_EACH_SYMBOL (node)
     if (!strcmp (flag_lto_dump_symbol, node->name ()))
       node->debug ();
-  fprintf (stdout, "\n");
-  exit (0);
+  printf ("\n");
+  return;
 }
 
 /* Dump specific gimple body of specified function.  */
@@ -235,35 +234,35 @@ void dump_body ()
   {
     if (cnode->definition && !strcmp (cnode->name (), flag_dump_body))
     {
-      fprintf (stdout, "Gimple Body of Function: %s\n", cnode->name ());
+      printf ("Gimple Body of Function: %s\n", cnode->name ());
       cnode->get_untransformed_body ();
       debug_function (cnode->decl, flags);
     }
   }
-    exit (0);
+    return;
 }
 
 /* List of command line options for dumping.  */
 void dump_tool_help ()
 {
-  fprintf (stdout, "\nLTO dump tool command line options.\n\n");
-  fprintf (stdout, "-list : Dump the symbol list.\n");
-  fprintf (stdout, "    -demangle : Dump the demangled output.\n");
-  fprintf (stdout, "    -defined-only : Dump only the defined symbols.\n");
-  fprintf (stdout, "    -print-value : Dump initial values of the variables.\n");
-  fprintf (stdout, "    -name-sort : Sort the symbols alphabetically.\n");
-  fprintf (stdout, "    -size-sort : Sort the symbols according to size.\n");
-  fprintf (stdout, "    -reverse-sort : Dump the symbols in reverse order.\n");
-  fprintf (stdout, "    -no-sort : Dump the symbols in order of occurence.\n");
-  fprintf (stdout, "-symbol= : Dump the details of specific symbol.\n");
-  fprintf (stdout, "-objects= : Dump the details of LTO objects.\n");
-  fprintf (stdout, "-type-stats : Dump statistics of tree types.\n");
-  fprintf (stdout, "-tree-stats : Dump statistics of trees.\n");
-  fprintf (stdout, "-gimple-stats : Dump statistics of gimple statements.\n");
-  fprintf (stdout, "-dump-level= : Deciding the optimization level of body.\n");
-  fprintf (stdout, "-dump-body= : Dump the specific gimple body.\n");
-  fprintf (stdout, "-help : Display the dump tool help.\n");
-  exit (0);
+  printf ("\nLTO dump tool command line options.\n\n");
+  printf ("-list : Dump the symbol list.\n");
+  printf ("    -demangle : Dump the demangled output.\n");
+  printf ("    -defined-only : Dump only the defined symbols.\n");
+  printf ("    -print-value : Dump initial values of the variables.\n");
+  printf ("    -name-sort : Sort the symbols alphabetically.\n");
+  printf ("    -size-sort : Sort the symbols according to size.\n");
+  printf ("    -reverse-sort : Dump the symbols in reverse order.\n");
+  printf ("    -no-sort : Dump the symbols in order of occurence.\n");
+  printf ("-symbol= : Dump the details of specific symbol.\n");
+  printf ("-objects= : Dump the details of LTO objects.\n");
+  printf ("-type-stats : Dump statistics of tree types.\n");
+  printf ("-tree-stats : Dump statistics of trees.\n");
+  printf ("-gimple-stats : Dump statistics of gimple statements.\n");
+  printf ("-dump-level= : Deciding the optimization level of body.\n");
+  printf ("-dump-body= : Dump the specific gimple body.\n");
+  printf ("-help : Display the dump tool help.\n");
+  return;
 }
 
 /* Functions for dumping various details in LTO dump tool are called
@@ -282,16 +281,9 @@ lto_main (void)
      TV_PARSE_GLOBAL are active, and we need to turn them off while
      doing LTO.  Later we turn them back on so they are active up in
      toplev.c.  */
-  timevar_pop (TV_PARSE_GLOBAL);
-  timevar_stop (TV_PHASE_PARSING);
-
-  timevar_start (TV_PHASE_SETUP);
 
   /* Initialize the LTO front end.  */
   lto_init ();
-
-  timevar_stop (TV_PHASE_SETUP);
-  timevar_start (TV_PHASE_STREAM_IN);
 
   /* Read all the symbols and call graph from all the files in the
      command line.  */
@@ -299,11 +291,17 @@ lto_main (void)
 
   /* Dump symbol list.  */
   if (flag_lto_dump_list)
+  {
     dump_list ();
+    return;
+  }
 
   /* Dump specific variables and functions used in IL.  */
   if (flag_lto_dump_symbol)
+  {
     dump_symbol ();
+    return;
+  }
 
   /* Dump gimple statement statistics.  */
   if (flag_lto_gimple_stats)
@@ -311,26 +309,27 @@ lto_main (void)
     cgraph_node *node;
     FOR_EACH_DEFINED_FUNCTION (node)
     node->get_untransformed_body ();
-    dump_gimple_statistics ();
-    exit (0);
+    if (!GATHER_STATISTICS)
+      warning_at (input_location, 0, "Not configured with --enable-gather-detailed-mem-stats.");
+    else
+      dump_gimple_statistics ();
+    return;
   }
 
   /* Dump tree statistics.  */
   if (flag_lto_tree_stats)
   {
-    fprintf (stdout, "Tree Statistics\n");
+    printf ("Tree Statistics\n");
     dump_tree_statistics ();
-    exit (0);
+    return;
   }
 
   /* Dump specific gimple body of specified function.  */
   if (flag_dump_body)
+  {
     dump_body ();
-
-  timevar_stop (TV_PHASE_STREAM_IN);
-
-  /* Here we make LTO pretend to be a parser.  */
-  timevar_start (TV_PHASE_PARSING);
-  timevar_push (TV_PARSE_GLOBAL);
+    return;
+  }
 
 }
+

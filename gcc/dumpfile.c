@@ -1299,12 +1299,12 @@ opt_info_enable_passes (optgroup_flags_t optgroup_flags, dump_flags_t flags,
   return n;
 }
 
-/* Helper routine for parsing dump flags and return corresponding
-   value.  */
+/* Helper routine to parse -<dump format>[=filename]
+   and return the corresponding dump flag.  */
 
 dump_flags_t
 parse_dump_option (const char *option_value, const char **pos_p,
-       const char *swtch)
+		   const char *swtch)
 {
   dump_flags_t flags = TDF_NONE;
   const char *ptr = option_value;
@@ -1317,37 +1317,37 @@ parse_dump_option (const char *option_value, const char **pos_p,
       unsigned length;
 
       if (pos_p)
-  *pos_p = NULL;
+	*pos_p = NULL;
 
       while (*ptr == '-')
-  ptr++;
+	ptr++;
 
       end_ptr = strchr (ptr, '-');
       eq_ptr = strchr (ptr, '=');
 
       if (eq_ptr && !end_ptr)
-        end_ptr = eq_ptr;
+	end_ptr = eq_ptr;
 
       if (!end_ptr)
-  end_ptr = ptr + strlen (ptr);
+	end_ptr = ptr + strlen (ptr);
       length = end_ptr - ptr;
 
       for (option_ptr = dump_options; option_ptr->name; option_ptr++)
-  if (strlen (option_ptr->name) == length
-      && !memcmp (option_ptr->name, ptr, length))
-          {
-            flags |= option_ptr->value;
-      goto found;
-          }
+	if (strlen (option_ptr->name) == length
+	    && !memcmp (option_ptr->name, ptr, length))
+	{
+	  flags |= option_ptr->value;
+	  goto found;
+	}
 
       if (*ptr == '=')
-        {
+	{
 	  if (pos_p)
-      *pos_p = ptr + 1;
-          break;
-        }
+	    *pos_p = ptr + 1;
+	  break;
+	}
       else if (swtch)
-        warning (0, "ignoring unknown option %q.*s in %<-fdump-%s%>",
+	warning (0, "ignoring unknown option %q.*s in %<-fdump-%s%>",
 		 length, ptr, swtch);
     found:
       ptr = end_ptr;

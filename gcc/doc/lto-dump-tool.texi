@@ -26,28 +26,32 @@ included in the gfdl(7) man page.
 @c man end
 @c Set file name and title for the man page.
 @setfilename lto-dump-tool
-@settitle offline lto dump tool
+@settitle Tool for dumping LTO object files. 
 @end ignore
 
 @node lto-dump-tool
-@chapter @command{lto-dump-tool}---an Offline LTO Dump Tool
+@chapter @command{lto-tool-dump}---Tool for dumping LTO object files.
 
 @menu
-* LTO-Dump-Tool Intro::             Introduction to LTO Dump Tool.
-* Invoking LTO-Dump-Tool::          How to use LTO Dump Tool.
+* lto-dump-tool Intro::             Introduction to lto-dump-tool.
+* Invoking lto-dump-tool::          How to use lto-dump-tool.
 @end menu
 
-@node LTO-Dump-Tool Intro
+@node lto-dump-tool Intro
 @section Introduction to @command{lto-dump-tool}
 @c man begin DESCRIPTION
 
 @command{lto-dump-tool} is a tool you can use in conjunction with GCC to
-analyze LTO object files.
+dump link time optimization object files.
 
 @c man end
 
-@node Invoking LTO-Dump-Tool
+@node Invoking lto-dump-tool
 @section Invoking @command{lto-dump-tool}
+
+@smallexample
+Usage: lto-dump-tool @r{[}@var{OPTION}@r{]} ... @var{objfiles}
+@end smallexample
 
 @command{lto-dump-tool} accepts the following options:
 
@@ -73,53 +77,53 @@ lto-dump-tool [@option{-list}]
 @end ignore
 
 @c man begin OPTIONS
-@table @gccltoopt
-@itemx -list
-Dump the symbol list.
+@table @gcctabopt
+@item -list
+Dumps list of details of functions and variables.
 
-@itemx -demangle
+@item -demangle
 Dump the demangled output.
 
-@itemx -defined-only
+@item -defined-only
 Dump only the defined symbols.
 
-@itemx -print-value
+@item -print-value
 Dump initial values of the variables.
 
-@itemx -name-sort
+@item -name-sort
 Sort the symbols alphabetically.
 
-@itemx -size-sort
+@item -size-sort
 Sort the symbols according to size.
 
-@itemx -reverse-sort
+@item -reverse-sort
 Dump the symbols in reverse order.
 
-@itemx -no-sort
+@item -no-sort
 Dump the symbols in order of occurence.
 
-@itemx -symbol=
+@item -symbol=
 Dump the details of specific symbol.
 
-@itemx -objects=
+@item -objects=
 Dump the details of LTO objects.
 
-@itemx -type-stats
+@item -type-stats
 Dump the statistics of tree types.
 
-@itemx -tree-stats
+@item -tree-stats
 Dump the statistics of trees.
 
-@itemx -gimple-stats
+@item -gimple-stats
 Dump the statistics of gimple statements.
 
-@itemx -dump-level=
+@item -dump-level=
 For deciding the optimization level of body.
 
-@itemx -dump-body=
+@item -dump-body=
 Dump the specific gimple body.
 
-@itemx -help
+@item -help
 Display the dump tool help.
 
 @end table
