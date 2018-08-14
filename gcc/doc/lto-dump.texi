@@ -30,7 +30,7 @@ included in the gfdl(7) man page.
 @end ignore
 
 @node lto-dump-tool
-@chapter @command{lto-tool-dump}---Tool for dumping LTO object files.
+@chapter @command{lto-dump-tool}---Tool for dumping LTO object files.
 
 @menu
 * lto-dump-tool Intro::             Introduction to lto-dump-tool.

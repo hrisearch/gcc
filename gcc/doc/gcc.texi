@@ -68,7 +68,7 @@ Texts being (a) (see below), and with the Back-Cover Texts being (b)
 * gcov: (gcc) Gcov.            @command{gcov}---a test coverage program.
 * gcov-tool: (gcc) Gcov-tool.  @command{gcov-tool}---an offline gcda profile processing program.
 * gcov-dump: (gcc) Gcov-dump.  @command{gcov-dump}---an offline gcda and gcno profile dump tool.
-* lto-dump-tool (gcc) lto-dump-tool. @command{lto-dump}---Tool for
+* lto-dump-tool: (gcc) lto-dump-tool. @command{lto-dump-tool}---Tool for
 dumping LTO object files.
 @end direntry
 This file documents the use of the GNU compilers.
@@ -174,7 +174,7 @@ object files.
 @include gcov.texi
 @include gcov-tool.texi
 @include gcov-dump.texi
-@include lto-dump-tool.texi
+@include lto-dump.texi
 @include trouble.texi
 @include bugreport.texi
 @include service.texi
