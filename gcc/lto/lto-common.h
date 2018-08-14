@@ -20,19 +20,13 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef LTO_COMMON_H
 #define LTO_COMMON_H
 
-void lto_init (void);
+void lto_fe_init (void);
 void read_cgraph_and_symbols (unsigned, const char **);
 void print_lto_report_1 (void);
 
-extern int real_file_count;
-extern GTY((length ("real_file_count + 1"))) struct lto_file_decl_data **
-       real_file_decl_data;
-extern GTY((length ("lto_stats.num_input_files + 1"))) struct lto_file_decl_data **
-       all_file_decl_data;
-extern GTY(()) tree lto_eh_personality_decl;
-extern GTY(()) vec <tree, va_gc> *tree_with_vars;
-extern GTY(()) const unsigned char *lto_mode_identity_table;
-extern GTY(()) tree first_personality_decl;
-
+extern tree lto_eh_personality_decl;
+extern vec <tree, va_gc> *tree_with_vars;
+extern const unsigned char *lto_mode_identity_table;
+extern tree first_personality_decl;
 
 #endif

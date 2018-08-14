@@ -2906,7 +2906,7 @@ lto_process_name (void)
 /* Initialize the LTO front end.  */
 
 void
-lto_init (void)
+lto_fe_init (void)
 {
   lto_process_name ();
   lto_streamer_hooks_init ();

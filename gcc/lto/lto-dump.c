@@ -283,7 +283,7 @@ lto_main (void)
      toplev.c.  */
 
   /* Initialize the LTO front end.  */
-  lto_init ();
+  lto_fe_init ();
 
   /* Read all the symbols and call graph from all the files in the
      command line.  */
