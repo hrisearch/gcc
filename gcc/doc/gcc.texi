@@ -68,7 +68,7 @@ Texts being (a) (see below), and with the Back-Cover Texts being (b)
 * gcov: (gcc) Gcov.            @command{gcov}---a test coverage program.
 * gcov-tool: (gcc) Gcov-tool.  @command{gcov-tool}---an offline gcda profile processing program.
 * gcov-dump: (gcc) Gcov-dump.  @command{gcov-dump}---an offline gcda and gcno profile dump tool.
-* lto-dump-tool: (gcc) lto-dump-tool. @command{lto-dump-tool}---Tool for
+* lto-dump: (gcc) lto-dump. @command{lto-dump}---Tool for
 dumping LTO object files.
 @end direntry
 This file documents the use of the GNU compilers.
@@ -144,7 +144,7 @@ Introduction, gccint, GNU Compiler Collection (GCC) Internals}.
 * Gcov::            @command{gcov}---a test coverage program.
 * Gcov-tool::       @command{gcov-tool}---an offline gcda profile processing program.
 * Gcov-dump::       @command{gcov-dump}---an offline gcda and gcno profile dump tool.
-* lto-dump-tool::   @command{lto-dump-tool}---Tool for dumping LTO
+* lto-dump::   @command{lto-dump}---Tool for dumping LTO
 object files.
 * Trouble::         If you have trouble using GCC.
 * Bugs::            How, why and where to report bugs.

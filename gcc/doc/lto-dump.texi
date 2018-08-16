@@ -25,39 +25,39 @@ included in the gfdl(7) man page.
      funds for GNU development.
 @c man end
 @c Set file name and title for the man page.
-@setfilename lto-dump-tool
+@setfilename lto-dump
 @settitle Tool for dumping LTO object files. 
 @end ignore
 
-@node lto-dump-tool
-@chapter @command{lto-dump-tool}---Tool for dumping LTO object files.
+@node lto-dump
+@chapter @command{lto-dump}---Tool for dumping LTO object files.
 
 @menu
-* lto-dump-tool Intro::             Introduction to lto-dump-tool.
-* Invoking lto-dump-tool::          How to use lto-dump-tool.
+* lto-dump Intro::             Introduction to lto-dump.
+* Invoking lto-dump::          How to use lto-dump.
 @end menu
 
-@node lto-dump-tool Intro
-@section Introduction to @command{lto-dump-tool}
+@node lto-dump Intro
+@section Introduction to @command{lto-dump}
 @c man begin DESCRIPTION
 
-@command{lto-dump-tool} is a tool you can use in conjunction with GCC to
+@command{lto-dump} is a tool you can use in conjunction with GCC to
 dump link time optimization object files.
 
 @c man end
 
-@node Invoking lto-dump-tool
-@section Invoking @command{lto-dump-tool}
+@node Invoking lto-dump
+@section Invoking @command{lto-dump}
 
 @smallexample
-Usage: lto-dump-tool @r{[}@var{OPTION}@r{]} ... @var{objfiles}
+Usage: lto-dump @r{[}@var{OPTION}@r{]} ... @var{objfiles}
 @end smallexample
 
-@command{lto-dump-tool} accepts the following options:
+@command{lto-dump} accepts the following options:
 
 @ignore
 @c man begin SYNOPSIS
-lto-dump-tool [@option{-list}]
+lto-dump [@option{-list}]
      [@option{-demangle}]
      [@option{-defined-only}]
      [@option{-print-value}]
@@ -66,13 +66,13 @@ lto-dump-tool [@option{-list}]
      [@option{-reverse-sort}]
      [@option{-no-sort}]
      [@option{-symbol=}]
-     [@option{-objects=}]
+     [@option{-objects}]
      [@option{-type-stats}]
      [@option{-tree-stats}]
      [@option{-gimple-stats}]
      [@option{-dump-level=}]
      [@option{-dump-body=}]
-     [@option{-help}] @var{lto-dump-tool}
+     [@option{-help}] @var{lto-dump}
 @c man end
 @end ignore
 
@@ -105,7 +105,7 @@ Dump the symbols in order of occurence.
 @item -symbol=
 Dump the details of specific symbol.
 
-@item -objects=
+@item -objects
 Dump the details of LTO objects.
 
 @item -type-stats

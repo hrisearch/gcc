@@ -152,16 +152,17 @@ void dump_list_functions (void)
       v.safe_push (e);
   }
 
-  if (!flag_lto_no_sort)
-  {
-    if (flag_lto_size_sort)
-      v.qsort (size_compare);
-    else if (flag_lto_name_sort)
-      v.qsort (name_compare);
-  }
+  if (flag_lto_size_sort)
+    v.qsort (size_compare);
+  else if (flag_lto_name_sort)
+    v.qsort (name_compare);
   if (flag_lto_reverse_sort)
     v.reverse ();
 
+  printf ("Type   Visibility  Size  Name");
+  if (flag_lto_print_value)
+    printf("  Value");
+  printf("\n");
   int i=0;
   symbol_entry* e;
   FOR_EACH_VEC_ELT (v, i, e)
@@ -182,15 +183,10 @@ void dump_list_variables (void)
       v.safe_push (e);
   }
 
-  if (!flag_lto_no_sort)
-  {
-    if (flag_lto_size_sort)
-      v.qsort (size_compare);
-    else if (flag_lto_name_sort)
-      v.qsort (name_compare);
-  }
-
-
+  if (flag_lto_size_sort)
+    v.qsort (size_compare);
+  else if (flag_lto_name_sort)
+    v.qsort (name_compare);
   if (flag_lto_reverse_sort)
     v.reverse ();
 
@@ -213,49 +209,57 @@ void dump_list (void)
 /* Dump specific variables and functions used in IL.  */
 void dump_symbol ()
 {
+  int flag = 0;
   symtab_node *node;
   printf ("Symbol: %s\n", flag_lto_dump_symbol);
   FOR_EACH_SYMBOL (node)
     if (!strcmp (flag_lto_dump_symbol, node->name ()))
+    {
       node->debug ();
-  printf ("\n");
+      printf ("\n");
+      flag = 1;
+    }
+    if (!flag)
+      error_at (input_location, "Symbol not found.");
   return;
 }
 
 /* Dump specific gimple body of specified function.  */
 void dump_body ()
 {
+  int flag = 0;
   dump_flags_t flags;
   flags = (flag_dump_level)
 	 ? parse_dump_option (flag_dump_level, 0, 0)
 	 : TDF_NONE;
   cgraph_node *cnode;
   FOR_EACH_FUNCTION (cnode)
+  if (cnode->definition && !strcmp (cnode->name (), flag_dump_body))
   {
-    if (cnode->definition && !strcmp (cnode->name (), flag_dump_body))
-    {
-      printf ("Gimple Body of Function: %s\n", cnode->name ());
-      cnode->get_untransformed_body ();
-      debug_function (cnode->decl, flags);
-    }
+    printf ("Gimple Body of Function: %s\n", cnode->name ());
+    cnode->get_untransformed_body ();
+    debug_function (cnode->decl, flags);
+    flag = 1;
   }
-    return;
+  if (!flag)
+    error_at (input_location, "Function not found.");
+  return;
 }
 
 /* List of command line options for dumping.  */
 void dump_tool_help ()
 {
   printf ("\nLTO dump tool command line options.\n\n");
-  printf ("-list : Dump the symbol list.\n");
-  printf ("    -demangle : Dump the demangled output.\n");
-  printf ("    -defined-only : Dump only the defined symbols.\n");
-  printf ("    -print-value : Dump initial values of the variables.\n");
-  printf ("    -name-sort : Sort the symbols alphabetically.\n");
-  printf ("    -size-sort : Sort the symbols according to size.\n");
-  printf ("    -reverse-sort : Dump the symbols in reverse order.\n");
-  printf ("    -no-sort : Dump the symbols in order of occurence.\n");
+  printf("Usage: lto-dump [OPTION]... SUB_COMMAND [OPTION]...\n\n");
+  printf ("-list [options] : Dump the symbol list.\n");
+  printf ("  -demangle : Dump the demangled output.\n");
+  printf ("  -defined-only : Dump only the defined symbols.\n");
+  printf ("  -print-value : Dump initial values of the variables.\n");
+  printf ("  -name-sort : Sort the symbols alphabetically.\n");
+  printf ("  -size-sort : Sort the symbols according to size.\n");
+  printf ("  -reverse-sort : Dump the symbols in reverse order.\n");
   printf ("-symbol= : Dump the details of specific symbol.\n");
-  printf ("-objects= : Dump the details of LTO objects.\n");
+  printf ("-objects : Dump the details of LTO objects.\n");
   printf ("-type-stats : Dump statistics of tree types.\n");
   printf ("-tree-stats : Dump statistics of trees.\n");
   printf ("-gimple-stats : Dump statistics of gimple statements.\n");
@@ -308,7 +312,7 @@ lto_main (void)
   {
     cgraph_node *node;
     FOR_EACH_DEFINED_FUNCTION (node)
-    node->get_untransformed_body ();
+      node->get_untransformed_body ();
     if (!GATHER_STATISTICS)
       warning_at (input_location, 0, "Not configured with --enable-gather-detailed-mem-stats.");
     else
@@ -319,8 +323,13 @@ lto_main (void)
   /* Dump tree statistics.  */
   if (flag_lto_tree_stats)
   {
-    printf ("Tree Statistics\n");
-    dump_tree_statistics ();
+    if (!GATHER_STATISTICS)
+      warning_at (input_location, 0, "Not configured with --enable-gather-detailed-mem-stats.");
+    else
+    {
+      printf ("Tree Statistics\n");
+      dump_tree_statistics ();
+    }
     return;
   }
 

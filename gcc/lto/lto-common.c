@@ -1827,14 +1827,14 @@ lto_read_decls (struct lto_file_decl_data *decl_data, const void *data,
 
     if (flag_lto_dump_type_stats)
     {
-      fprintf (stdout, "\n\n     Type     Frequency   Percentage\n\n");
+      fprintf (stdout, "       Type     Frequency   Percentage\n\n");
       for (hash_map<code_id_hash, unsigned>::iterator itr = hm.begin ();
 	   itr != hm.end ();
 	   ++itr)
       {
 	std::pair<unsigned, unsigned> p = *itr;
 	enum tree_code code = (enum tree_code) p.first;
-	fprintf (stdout, "%14s %6d %10.2f%\n", get_tree_code_name (code),
+	fprintf (stdout, "%14s %6d %12.2f%\n", get_tree_code_name (code),
 		 p.second, float (p.second)/total*100);
       }
     }
