@@ -232,6 +232,11 @@ void dump_body ()
   flags = (flag_dump_level)
 	 ? parse_dump_option (flag_dump_level, 0, 0)
 	 : TDF_NONE;
+  if (flags == TDF_ERROR)
+  {
+    error_at (input_location, "Level not found, use none, slim, blocks, vops.");
+    return;
+  }
   cgraph_node *cnode;
   FOR_EACH_FUNCTION (cnode)
   if (cnode->definition && !strcmp (cnode->name (), flag_dump_body))
@@ -288,7 +293,7 @@ lto_main (void)
 
   /* Initialize the LTO front end.  */
   lto_fe_init ();
-
+  g_timer = false;
   /* Read all the symbols and call graph from all the files in the
      command line.  */
   read_cgraph_and_symbols (num_in_fnames, in_fnames);

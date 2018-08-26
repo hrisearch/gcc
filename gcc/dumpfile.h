@@ -146,7 +146,9 @@ enum dump_flag
 	     | MSG_NOTE),
 
   /* Dumping for -fcompare-debug.  */
-  TDF_COMPARE_DEBUG = (1 << 25)
+  TDF_COMPARE_DEBUG = (1 << 25),
+
+  TDF_ERROR = (1<<26)
 };
 
 /* Dump flags type.  */

@@ -1346,9 +1346,12 @@ parse_dump_option (const char *option_value, const char **pos_p,
 	    *pos_p = ptr + 1;
 	  break;
 	}
-      else if (swtch)
-	warning (0, "ignoring unknown option %q.*s in %<-fdump-%s%>",
-		 length, ptr, swtch);
+      else
+      {
+	warning (0, "ignoring unknown option %q.*s",
+		 length, ptr);
+	flags = TDF_ERROR;
+      }
     found:
       ptr = end_ptr;
   }
