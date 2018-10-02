@@ -808,6 +808,23 @@ symtab_node::dump_referring (FILE *file)
 
 static const char * const symtab_type_names[] = {"symbol", "function", "variable"};
 
+/* Dump the visibility of the symbol.  */
+const char *
+symtab_node::dump_visibility () const
+{
+  static const char * const visibility_types[] = {
+      "default", "protected", "hidden", "internal"
+  };
+  return visibility_types[DECL_VISIBILITY (decl)];
+}
+
+/* Dump the type_name of the symbol.  */
+const char *
+symtab_node::dump_type_name () const
+{
+  return symtab_type_names[type];
+}
+
 /* Dump base fields of symtab nodes to F.  Not to be used directly.  */
 
 void

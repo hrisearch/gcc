@@ -161,6 +161,9 @@ enum dump_flag
   /* Dumping for -fcompare-debug.  */
   TDF_COMPARE_DEBUG = (1 << 25),
 
+  /* For error.  */
+  TDF_ERROR = (1<<26),
+
   /* All values.  */
   TDF_ALL_VALUES = (1 << 26) - 1
 };
@@ -437,6 +440,8 @@ extern void dump_end (int, FILE *);
 extern int opt_info_switch_p (const char *);
 extern const char *dump_flag_name (int);
 extern const kv_pair<optgroup_flags_t> optgroup_options[];
+extern dump_flags_t
+parse_dump_option (const char *, const char **, const char *);
 
 /* Global variables used to communicate with passes.  */
 extern FILE *dump_file;

@@ -46,7 +46,10 @@ lto.all.cross: $(LTO_EXE) $(LTO_DUMP_EXE)
 lto.start.encap: $(LTO_EXE) $(LTO_DUMP_EXE)
 lto.rest.encap:
 lto.tags:
-lto.install-common:
+lto.install-common: installdirs
+	$(INSTALL_PROGRAM) $(LTO_DUMP_EXE) \
+	$(DESTDIR)/$(bindir)/$(LTO_DUMP_EXE)
+
 lto.install-man:
 lto.install-info:
 lto.dvi:

@@ -66,6 +66,65 @@ fwpa=
 LTO Driver RejectNegative Joined Var(flag_wpa)
 Whole program analysis (WPA) mode with number of parallel jobs specified.
 
+
+list
+LTO Var(flag_lto_dump_list)
+Call the dump function for variables and function in IL.
+
+demangle
+LTO Var(flag_lto_dump_demangle)
+Dump the demangled output.
+
+defined-only
+LTO Var(flag_lto_dump_defined)
+Dump only the defined symbols.
+
+print-value
+LTO Var(flag_lto_print_value)
+Print the initial values of the variables.
+
+name-sort
+LTO Var(flag_lto_name_sort)
+Sort the symbols alphabetically.
+
+size-sort
+LTO Var(flag_lto_size_sort)
+Sort the symbols according to size.
+
+reverse-sort
+LTO Var(flag_lto_reverse_sort)
+Display the symbols in reverse order.
+
+symbol=
+LTO Driver RejectNegative Joined Var(flag_lto_dump_symbol)
+
+objects
+LTO Var(flag_lto_dump_objects)
+Dump the details of LTO objects.
+
+type-stats
+LTO Var(flag_lto_dump_type_stats)
+Dump the statistics of tree types.
+
+tree-stats
+LTO Var(flag_lto_tree_stats)
+Dump the statistics of trees.
+
+gimple-stats
+LTO Var(flag_lto_gimple_stats)
+Dump the statistics of gimple statements.
+
+dump-level=
+LTO Driver RejectNegative Joined Var(flag_dump_level)
+
+dump-body=
+LTO Driver RejectNegative Joined Var(flag_dump_body)
+
+help
+LTO Var(flag_lto_dump_tool_help)
+Dump the dump tool command line options.
+
+
 fresolution=
 LTO Joined
 The resolution file.
